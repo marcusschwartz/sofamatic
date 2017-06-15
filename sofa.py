@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-#from OmegaExpansion import oledExp
 import socket
 import math
 import serial
@@ -40,20 +39,14 @@ JOY_MODES  = [
 
 MAX_FWD_SPEED=3.0
 MAX_TURN_FWD_SPEED=3.0
+
 TURBO_MAX_FWD_SPEED=9.0
 TURBO_MAX_TURN_FWD_SPEED=4.0
+
 MAX_REV_SPEED=3.0
 MAX_TURN_REV_SPEED=2.0
 
-TURN_DEADBAND=9
-
-MIN_TURN_RATE=0.2
-MAX_TURN_RATE=1.0
-
 PI=3.14159
-
-ACCEL_STEP=15
-
 E=2.7182
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -61,7 +54,6 @@ sock.bind(("192.168.3.1", 31337))
 sock.setblocking(0)
 
 def shutdown():
-  print("SHUTTING DOWN")
   try:
     os.unlink("/var/run/sofa_status")
   except:
@@ -102,7 +94,6 @@ def correctRawJoystick(raw_x, raw_y):
     y = int(100 * (raw_y - min) / (max - min)) - 100
   
   return x, y
-
 
 def getJoystickVector(x, y):
   magnitude = int(math.sqrt(x * x + y * y))
@@ -161,11 +152,6 @@ def getJoystick():
 
   return magnitude, angle, c, z
 
-def show_debug(level, debug_str):
-  print(debug_str)
-#  oledExp.setCursor(level,9)
-#  oledExp.write(debug_str)
-
 def roboteqExec(ser, cmd):
 	ser.write(cmd + "\r")
 	r = ser.read(len(cmd) + 1)
@@ -193,14 +179,9 @@ def dump_status(magnitude, angle, left_motor, target_right_motor, volts, amps):
   status.write("MOTOR   {:4.1f} {:4.1f}\n".format(left_motor, right_motor))
   status.write("VOLTS   {}\n".format(volts))
   status.write("AMPS    {}\n".format(amps))
-  if magnitude > -1:
-    status.write("WIFI    OK\n");
-  else:
-    status.write("WIFI    MISSING\n");
   status.close()
   os.rename(status_temp_file, "/var/run/sofa_status")
   end = time.time()
-
 
 def linear_map(i, i_min, i_max, o_min, o_max):
   if o_max > o_min:
