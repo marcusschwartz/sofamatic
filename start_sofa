@@ -2,7 +2,7 @@
 
 kill -TERM `pidof sofa.py`
 kill -TERM `pidof sofa_display.py`
-oled-exp -i -c write "Booting..."
+oled-exp -i -c write "Starting sofa.py..."
 echo Starting sofa.py... > /var/run/sofa_status
 /root/sofa/sofa_display.py >/dev/null &
 /root/sofa/sofa.py >/dev/null &
