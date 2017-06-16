@@ -190,8 +190,11 @@ class sofa:
                         mode = 'IDLE'
 			taret_speed = 0.0
 			target_m1_speed = 0.0
+			current_m1_speed = 0.0
 			target_m2_speed = 0.0
+			current_m2_speed = 0.0
 			target_max_speed = 0.0
+			current_max_speed = 0.0
                         time.sleep(0.1)
                         continue
 
