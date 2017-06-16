@@ -50,17 +50,12 @@ MAX_TURN_REV_SPEED = 2.0
 PI = 3.14159
 E = 2.7182
 
-SOCK = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-SOCK.bind(("192.168.3.1", 31337))
-SOCK.setblocking(0)
-
-
 def shutdown():
     """remove any evidence of our running"""
-#    try:
-    os.unlink("/var/run/sofa_status")
-#    except:
-#        pass
+    try:
+        os.unlink("/var/run/sofa_status")
+    except:
+        pass
 
 
 def gamma(orig):
@@ -82,8 +77,8 @@ def correct_raw_joystick(raw_x, raw_y):
         j_max = JOY_RIGHT
         out_x = int(100 * (raw_x - j_min) / (j_max - j_min))
     elif raw_x < JOY_CENTER - JOY_DEADZONE:
-        y_min = JOY_LEFT
-        y_max = JOY_CENTER - JOY_DEADZONE
+        j_min = JOY_LEFT
+        j_max = JOY_CENTER - JOY_DEADZONE
         out_x = int(100 * (raw_x - j_min) / (j_max - j_min)) - 100
 
     out_y = 0
@@ -132,13 +127,13 @@ def get_joystick_vector(joy_x, joy_y):
     return magnitude, angle
 
 
-def get_joystick():
+def get_joystick(sock):
     """get a joystick value"""
     got_packet = True
     data = False
     while got_packet:
         try:
-            data, addr = SOCK.recvfrom(1024)
+            data, addr = sock.recvfrom(1024)
         except socket.error:
             got_packet = False
 
@@ -204,17 +199,16 @@ def linear_map(i, i_min, i_max, o_min, o_max):
     return out
 
 
-atexit.register(shutdown)
-
-
 def control_loop():
     """the main logic"""
     mode = 'IDLE'
     submode = ''
 
-    ser = serial.Serial("/dev/ttyACM0", 115200, timeout=1)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(("192.168.3.1", 31337))
+    sock.setblocking(0)
 
-    magnitude, angle, button_c, button_z = get_joystick()
+    ser = serial.Serial("/dev/ttyACM0", 115200, timeout=1)
 
     left_motor = 0.0
     right_motor = 0.0
@@ -228,6 +222,8 @@ def control_loop():
     m2_speed = 0.0
 
     while True:
+        magnitude, angle, button_c, button_z = get_joystick(sock)
+	 
         if magnitude < 0:
             missed_data += 1
             if missed_data > 3:
@@ -381,3 +377,8 @@ def control_loop():
         dump_status(mode, submode, magnitude, angle, int(left_motor),
                     int(right_motor), volts, amps)
         time.sleep(0.1)
+
+atexit.register(shutdown)
+control_loop()
+
+
