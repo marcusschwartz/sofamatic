@@ -59,8 +59,18 @@ def dump_status(mode, submode, magnitude, angle, left_motor, right_motor,
     """output interesting metrics to stdout and a status file"""
     print(
         "{:8s} {:8s} {:3d}% {:3d}o {:5.0f},{:5.0f} {} {} {:3.2f} {:3.2f} {:3.2f} {:3.2f}".format(
-            mode, submode, magnitude, angle, left_motor, right_motor, volts, amps, speed,
-            m1_speed, m2_speed, max_speed))
+            mode,
+            submode,
+            magnitude,
+            angle,
+            left_motor,
+            right_motor,
+            volts,
+            amps,
+            speed,
+            m1_speed,
+            m2_speed,
+            max_speed))
     status = tempfile.NamedTemporaryFile(dir="/var/run", delete=False)
     status_temp_file = status.name
     now = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -183,13 +193,13 @@ class sofa:
                 elif mode == 'SPIN':
                     if magnitude < 10 and current_m1_speed == 0:
                         mode = 'IDLE'
-			taret_speed = 0.0
-			target_m1_speed = 0.0
-			current_m1_speed = 0.0
-			target_m2_speed = 0.0
-			current_m2_speed = 0.0
-			target_max_speed = 0.0
-			current_max_speed = 0.0
+                        taret_speed = 0.0
+                        target_m1_speed = 0.0
+                        current_m1_speed = 0.0
+                        target_m2_speed = 0.0
+                        current_m2_speed = 0.0
+                        target_max_speed = 0.0
+                        current_max_speed = 0.0
                         time.sleep(0.1)
                         continue
 
@@ -237,18 +247,18 @@ class sofa:
                                                      accel_profile)
 
                     left_motor = math.sqrt(
-                            abs(current_m2_speed) * current_speed) * current_max_speed
+                        abs(current_m2_speed) * current_speed) * current_max_speed
                     right_motor = math.sqrt(
-                            abs(current_m1_speed) * current_speed) * current_max_speed
-	 	    print("MOTORS {} {}".format(left_motor, right_motor))
-		    if current_m1_speed < 0:
-		        left_motor *= -1.0
+                        abs(current_m1_speed) * current_speed) * current_max_speed
+                    print("MOTORS {} {}".format(left_motor, right_motor))
+                    if current_m1_speed < 0:
+                        left_motor *= -1.0
 
-		    if current_m2_speed < 0:
-		        right_motor *= -1.0
+                    if current_m2_speed < 0:
+                        right_motor *= -1.0
 
-		    left_motor *= MOTOR_MULTIPLIER
-		    right_motor *= MOTOR_MULTIPLIER
+                    left_motor *= MOTOR_MULTIPLIER
+                    right_motor *= MOTOR_MULTIPLIER
 
                 elif mode == 'FORWARD' or mode == 'REVERSE':
                     turn_direction = 'NONE'
@@ -319,8 +329,9 @@ class sofa:
                                                 ((135.0 - float(turn_angle)) / 135.0)) + \
                                 TURBO_MAX_TURN_FWD_SPEED
                         else:
-                            target_max_speed = ((MAX_FWD_SPEED - MAX_TURN_FWD_SPEED) * (
-                                (135.0 - float(turn_angle)) / 135.0)) + MAX_TURN_FWD_SPEED
+                            target_max_speed = (
+                                (MAX_FWD_SPEED - MAX_TURN_FWD_SPEED) * (
+                                    (135.0 - float(turn_angle)) / 135.0)) + MAX_TURN_FWD_SPEED
 
                     elif mode == 'REVERSE':
                         target_max_speed = ((MAX_REV_SPEED - MAX_TURN_REV_SPEED) * (
