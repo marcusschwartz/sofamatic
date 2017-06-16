@@ -38,14 +38,16 @@ JOY_MODES = [
     ["", 180, 0.0, 0.0, "BRAKE"],
 ]
 
-MAX_FWD_SPEED = 3.0
-MAX_TURN_FWD_SPEED = 3.0
+MAX_FWD_SPEED = 0.33
+MAX_TURN_FWD_SPEED = 0.33
 
-TURBO_MAX_FWD_SPEED = 9.0
-TURBO_MAX_TURN_FWD_SPEED = 4.0
+TURBO_MAX_FWD_SPEED = 1.0
+TURBO_MAX_TURN_FWD_SPEED = 0.4
 
-MAX_REV_SPEED = 2.0
-MAX_TURN_REV_SPEED = 2.0
+MAX_REV_SPEED = 0.2
+MAX_TURN_REV_SPEED = 0.2
+
+MOTOR_MULTIPLIER = 900
 
 PI = 3.14159
 E = 2.7182
@@ -171,10 +173,10 @@ def robotec_exec(ser, cmd):
 
 
 def dump_status(mode, submode, magnitude, angle, left_motor, right_motor,
-                volts, amps):
+                volts, amps, speed, m1_speed, m2_speed, max_speed):
     """output interesting metrics to stdout and a status file"""
-    print("{:8s} {:8s} {:3d}% {:3d}o {:5.0f},{:5.0f} {} {}".format(
-        mode, submode, magnitude, angle, left_motor, right_motor, volts, amps))
+    print("{:8s} {:8s} {:3d}% {:3d}o {:5.0f},{:5.0f} {} {} {:3.2f} {:3.2f} {:3.2f} {:3.2f}".format(
+        mode, submode, magnitude, angle, left_motor, right_motor, volts, amps, speed, m1_speed, m2_speed, max_speed))
     status = tempfile.NamedTemporaryFile(dir="/var/run", delete=False)
     status_temp_file = status.name
     now = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -199,18 +201,18 @@ def linear_map(i, i_min, i_max, o_min, o_max):
     return out
 
 
-def process_accel(current_speed, target_speed, accel_profile):
+def process_accel(target_speed, current_speed, accel_profile):
     """do the accel/decel thing"""
     accel_profiles = {
-        'NORMAL': [target_speed / 20.0, current_speed / 20.0],
-        'TURBO': [target_speed / 10.0, current_speed / 20.0],
-        'BRAKE': [target_speed / 20.0, current_speed / 7.0],
+        'NORMAL': [0.05, 0.1, 0.1],
+        'TURBO': [0.1, 0.1, 0.1],
+        'BRAKE': [0.1, 0.3, 0.1],
     }
 
     if target_speed > current_speed:
         # accelerate
         accel_rate = accel_profiles[accel_profile][0]
-        print "ACCEL {} {}".format(current_speed, accel_rate)
+        print "ACCEL {} {} {}".format(accel_profile, current_speed, accel_rate)
         current_speed += accel_rate
         if current_speed > target_speed:
             current_speed = target_speed
@@ -218,15 +220,20 @@ def process_accel(current_speed, target_speed, accel_profile):
     elif target_speed < current_speed:
         # deccelerate
         decel_rate = accel_profiles[accel_profile][1]
-        if decel_rate < 35:
-            decel_rate = 35
-        print "DECEL {} {}".format(current_speed, decel_rate)
+        min_decel_rate = accel_profiles[accel_profile][2]
+        if decel_rate < min_decel_rate:
+            decel_rate = min_decel_rate
+        print "DECEL {} {} {}".format(accel_profile, current_speed, decel_rate)
         current_speed -= decel_rate
         if current_speed < target_speed:
             current_speed = target_speed
 
+    return current_speed
 
->>>>>>> try generalizing accel
+
+def cuberoot(n):
+    return n ** (1.0 / 3)
+
 def control_loop():
     """the main logic"""
     mode = 'IDLE'
@@ -251,6 +258,9 @@ def control_loop():
 
     current_m1_speed = 0.0
     current_m2_speed = 0.0
+
+    target_max_speed = 0.0
+    current_max_speed = 0.0
 
     while True:
         magnitude, angle, button_c, button_z = get_joystick(sock)
@@ -287,7 +297,9 @@ def control_loop():
                 start_m2_speed = 0.0
                 end_m2_speed = 0.0
 
-                if magnitude == 0 and current_speed == 0:
+                if magnitude == 0 and current_speed == 0 and target_speed == 0:
+		    target_m1_speed = 0.0
+		    target_m2_speed = 0.0
                     mode = 'IDLE'
                     continue
 
@@ -328,89 +340,72 @@ def control_loop():
                                                  end_m2_speed)
                 else:
                     submode = "COAST"
+		    accel_profile = "NORMAL"
 
     #            print("SUBMODE {:6s} {:4.2f} {:4.2f} {} {}".format(
     #                  submode, m1_speed, m2_speed, start_angle, end_angle))
 
                 if mode == 'FORWARD':
                     if button_z:
-                        max_speed = ((TURBO_MAX_FWD_SPEED -
+                        target_max_speed = ((TURBO_MAX_FWD_SPEED -
                                       TURBO_MAX_TURN_FWD_SPEED) *
                                      ((135.0 - float(turn_angle)) / 135.0)) + \
                                         TURBO_MAX_TURN_FWD_SPEED
                     else:
-                        max_speed = ((MAX_FWD_SPEED - MAX_TURN_FWD_SPEED) *
+                        target_max_speed = ((MAX_FWD_SPEED - MAX_TURN_FWD_SPEED) *
                                      ((135.0 - float(turn_angle)) / 135.0)) + \
                                         MAX_TURN_FWD_SPEED
 
                 elif mode == 'REVERSE':
-                    max_speed = ((MAX_REV_SPEED - MAX_TURN_REV_SPEED) *
+                    target_max_speed = ((MAX_REV_SPEED - MAX_TURN_REV_SPEED) *
                                  ((135.0 - float(turn_angle)) / 135.0)) + \
                                     MAX_TURN_FWD_SPEED
 
                 if submode != 'COAST':
-                    target_speed = gamma(magnitude) * max_speed
+                    target_speed = gamma(magnitude) / 100.0
                 else:
-                    target_speed = 0
-
-                print("TARGET {} {} {}".format(target_speed, target_m1_speed,
-                                               target_m2_speed))
-                print("CURRENT {} {} {}".format(current_speed, target_m1_speed,
-                                                target_m2_speed))
+                    target_speed = 0.0
+		    target_m1_speed = 0.0
+		    target_m2_speed = 0.0
 
                 if accel_profile == 'NORMAL' and button_z:
                     accel_profile = 'TURBO'
 
-                target_speed_new = process_accel(target_speed, current_speed,
+                current_speed = process_accel(target_speed, current_speed,
+                                              accel_profile)
+                current_max_speed = process_accel(target_max_speed, current_max_speed,
+                                              accel_profile)
+                current_m1_speed = process_accel(target_m1_speed,
+                                                 current_m1_speed,
                                                  accel_profile)
-                target_m1_speed_new = process_accel(target_m1_speed,
-                                                    current_m1_speed,
-                                                    'm_' + accel_profile)
-                target_m2_speed_new = process_accel(target_m2_speed,
-                                                    current_m2_speed,
-                                                    'm_' + accel_profile)
+                current_m2_speed = process_accel(target_m2_speed,
+                                                 current_m2_speed,
+                                                 accel_profile)
 
-                print "TARGET {} {} {}".format(target_speed_new,
-                                               target_m1_speed_new,
-                                               target_m2_speed_new)
-
-                if target_speed > current_speed:
-                    # accelerate
-                    if button_z:
-                        accel_rate = target_speed / 10.0
-                    else:
-                        accel_rate = target_speed / 20.0
-                    print "ACCEL {} {}".format(current_speed, accel_rate)
-                    current_speed += accel_rate
-                    if current_speed > target_speed:
-                        current_speed = target_speed
-                elif target_speed < current_speed:
-                    # deccelerate
-                    decel_rate = current_speed / 20.0
-                    if accel_profile == 'BRAKE':
-                        decel_rate *= 3
-                    if decel_rate < 35:
-                        decel_rate = 35
-                    print "DECEL {} {}".format(current_speed, decel_rate)
-                    current_speed -= decel_rate
-                    if current_speed < target_speed:
-                        current_speed = target_speed
+#                print("TARGET {} {} {}".format(target_speed, target_m1_speed,
+#                                               target_m2_speed))
+#                print("CURRENT {} {} {}".format(current_speed, current_m1_speed,
+#                                                current_m2_speed))
 
                 if turn_direction == 'LEFT':
-                    left_motor = current_m2_speed * current_speed
-                    right_motor = current_m1_speed * current_speed
+                    left_motor = math.sqrt(current_m2_speed * current_speed) * current_max_speed
+                    right_motor = math.sqrt(current_m1_speed * current_speed) * current_max_speed
                 elif turn_direction == 'RIGHT':
-                    left_motor = current_m1_speed * current_speed
-                    right_motor = current_m2_speed * current_speed
+                    left_motor = math.sqrt(current_m1_speed * current_speed) * current_max_speed
+                    right_motor = math.sqrt(current_m2_speed * current_speed) * current_max_speed
                 else:
-                    left_motor = current_speed
-                    right_motor = current_speed
+                    left_motor = current_speed * current_max_speed
+                    right_motor = current_speed * current_max_speed
 
                 left_motor *= 0.96
 
                 if mode == 'REVERSE':
                     left_motor *= -1.0
                     right_motor *= -1.0
+		
+		left_motor *= MOTOR_MULTIPLIER
+		right_motor *= MOTOR_MULTIPLIER
+
 
         robotec_exec(ser, "!G 2 {}".format(-1 * int(left_motor)))
         robotec_exec(ser, "!G 1 {}".format(int(right_motor)))
@@ -424,7 +419,7 @@ def control_loop():
         amps = "{:4.1f} {:4.1f}".format(amps_l, amps_r)
 
         dump_status(mode, submode, magnitude, angle, int(left_motor),
-                    int(right_motor), volts, amps)
+                    int(right_motor), volts, amps, current_speed, current_m1_speed, current_m2_speed, current_max_speed)
         time.sleep(0.1)
 
 
