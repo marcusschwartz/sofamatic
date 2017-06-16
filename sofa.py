@@ -6,26 +6,10 @@ import os
 import socket
 import tempfile
 import time
+import joystick
+import motors
 
 import serial
-
-# oem
-# JOY_LEFT=30
-# JOY_CENTER=135
-# JOY_RIGHT=230
-# JOY_TOP=231
-# JOY_MIDDLE=130
-# JOY_BOTTOM=31
-# JOY_DEADZONE=5
-
-# wireless
-JOY_LEFT = 0
-JOY_CENTER = 127
-JOY_RIGHT = 255
-JOY_TOP = 255
-JOY_MIDDLE = 127
-JOY_BOTTOM = 0
-JOY_DEADZONE = 10
 
 JOY_MODES = [
     # name, start_angle, m1_speed, m2_speed, accel_profile
@@ -66,112 +50,6 @@ def gamma(orig):
     output = orig / 10
     gam = (E**(output / 4.1)) - 1
     return gam * 10
-
-
-def correct_raw_joystick(raw_x, raw_y):
-    """turn an i2c joystick x/y value into a -100:100 x/y value"""
-    out_x = 0
-    if raw_x >= JOY_RIGHT:
-        out_x = 100
-    elif raw_x <= JOY_LEFT:
-        out_x = -100
-    elif raw_x > JOY_CENTER + JOY_DEADZONE:
-        j_min = JOY_CENTER + JOY_DEADZONE
-        j_max = JOY_RIGHT
-        out_x = int(100 * (raw_x - j_min) / (j_max - j_min))
-    elif raw_x < JOY_CENTER - JOY_DEADZONE:
-        j_min = JOY_LEFT
-        j_max = JOY_CENTER - JOY_DEADZONE
-        out_x = int(100 * (raw_x - j_min) / (j_max - j_min)) - 100
-
-    out_y = 0
-    if raw_y >= JOY_TOP:
-        out_y = 100
-    elif raw_y <= JOY_BOTTOM:
-        out_y = -100
-    elif raw_y > JOY_MIDDLE + JOY_DEADZONE:
-        y_min = JOY_MIDDLE + JOY_DEADZONE
-        y_max = JOY_TOP
-        out_y = int(100 * (raw_y - y_min) / (y_max - y_min))
-    elif raw_y < JOY_MIDDLE - JOY_DEADZONE:
-        y_min = JOY_BOTTOM
-        y_max = JOY_MIDDLE - JOY_DEADZONE
-        out_y = int(100 * (raw_y - y_min) / (y_max - y_min)) - 100
-
-    return out_x, out_y
-
-
-def get_joystick_vector(joy_x, joy_y):
-    """turn an x,y into a magnitude,angle"""
-    magnitude = int(math.sqrt(joy_x * joy_x + joy_y * joy_y))
-    if magnitude > 100:
-        magnitude = 100
-    angle = 0.0
-    if joy_y > 0:
-        angle = math.atan(abs(1.0 * joy_x) / abs(1.0 * joy_y))
-        if joy_x < 0:
-            angle = PI * 2 - angle
-    elif joy_y < 0:
-        angle = math.atan(abs(1.0 * joy_x) / abs(1.0 * joy_y))
-        if joy_x > 0:
-            angle = PI - angle
-        elif joy_x < 0:
-            angle = PI + angle
-        else:
-            angle = PI
-    else:
-        if joy_x > 0:
-            angle = PI * 0.5
-        elif joy_x < 0:
-            angle = PI * 1.5
-
-    angle = int(angle / (2 * PI) * 360)
-
-    return magnitude, angle
-
-
-def get_joystick(sock):
-    """get a joystick value"""
-    got_packet = True
-    data = False
-    while got_packet:
-        try:
-            data, addr = sock.recvfrom(1024)
-        except socket.error:
-            got_packet = False
-
-    if not data:
-        return -1, -1, False, False
-
-    raw_x_s, raw_y_s, raw_z, raw_c = data.split(':')
-    joy_x, joy_y = correct_raw_joystick(int(raw_x_s), int(raw_y_s))
-    button_z = False
-    if raw_z == '1':
-        button_z = True
-    button_c = False
-    if raw_c == '1':
-        button_c = True
-
-    magnitude, angle = get_joystick_vector(joy_x, joy_y)
-
-    return magnitude, angle, button_c, button_z
-
-
-def robotec_exec(ser, cmd):
-    """run a motor controller command and return the results"""
-    ser.write(cmd + "\r")
-    ser.read(len(cmd) + 1)
-    newline = False
-    resp = ''
-    while not newline:
-        char = ser.read(1)
-        if char == "\r":
-            newline = True
-        else:
-            resp = resp + char
-
-    return resp
-
 
 def dump_status(mode, submode, magnitude, angle, left_motor, right_motor,
                 volts, amps, speed, m1_speed, m2_speed, max_speed):
@@ -236,197 +114,222 @@ def cuberoot(n):
     return n ** (1.0 / 3)
 
 
-def control_loop():
-    """the main logic"""
-    mode = 'IDLE'
-    submode = ''
+class sofa:
+    _motor = None
+    _nunchuk = None
+    
+    def __init__(self):
+        self._nunchuk = joystick.nunchuk()
+	self._motors = motors.roboteq()
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(("192.168.3.1", 31337))
-    sock.setblocking(0)
-
-    ser = serial.Serial("/dev/ttyACM0", 115200, timeout=1)
-
-    left_motor = 0.0
-    right_motor = 0.0
-
-    missed_data = 0
-
-    target_speed = 0.0
-    current_speed = 0.0
-
-    target_m1_speed = 0.0
-    target_m2_speed = 0.0
-
-    current_m1_speed = 0.0
-    current_m2_speed = 0.0
-
-    target_max_speed = 0.0
-    current_max_speed = 0.0
-
-    while True:
-        magnitude, angle, button_c, button_z = get_joystick(sock)
-
-        if magnitude < 0:
-            missed_data += 1
-            if missed_data > 3:
-                mode = 'OFFLINE'
-                left_motor = 0.0
-                right_motor = 0.0
-
-        else:
-            missed_data = 0
-
-            if mode == 'OFFLINE':
-                mode = 'IDLE'
-
-            if mode == 'IDLE':
-                if magnitude > 10:
-                    if (angle <= 45) or (angle >= 315):
-                        mode = 'FORWARD'
-                    elif (angle >= 135) and (angle <= 225):
-                        mode = 'REVERSE'
-
-            elif mode == 'FORWARD' or mode == 'REVERSE':
-                turn_direction = 'NONE'
-                turn_angle = 0
-                submode = ""
-                accel_profile = ""
-                start_angle = 0
-                end_angle = 0
-                start_m1_speed = 0.0
-                end_m1_speed = 0.0
-                start_m2_speed = 0.0
-                end_m2_speed = 0.0
-
-                if magnitude == 0 and current_speed == 0 and target_speed == 0:
-                    target_m1_speed = 0.0
-                    target_m2_speed = 0.0
+    def control_loop(self):
+        """the main logic"""
+        mode = 'IDLE'
+        submode = ''
+    
+        ser = serial.Serial("/dev/ttyACM0", 115200, timeout=1)
+    
+        left_motor = 0.0
+        right_motor = 0.0
+    
+        missed_data = 0
+    
+        target_speed = 0.0
+        current_speed = 0.0
+    
+        target_m1_speed = 0.0
+        target_m2_speed = 0.0
+    
+        current_m1_speed = 0.0
+        current_m2_speed = 0.0
+    
+        target_max_speed = 0.0
+        current_max_speed = 0.0
+    
+        while True:
+            magnitude, angle, button_c, button_z = self._nunchuk.get_joystick()
+    
+            if magnitude < 0:
+                missed_data += 1
+                if missed_data > 3:
+                    mode = 'OFFLINE'
+                    left_motor = 0.0
+                    right_motor = 0.0
+    
+            else:
+                missed_data = 0
+    
+                if mode == 'OFFLINE':
                     mode = 'IDLE'
-                    continue
+    
+                if mode == 'IDLE':
+                    if magnitude > 10:
+		        if button_c:
+			    if angle <= 45 or angle >= 315:
+			        mode = 'SPIN'
+		            elif angle > 45 and angle < 135:
+			        mode = 'CRAWL'
+			    elif angle >= 135 and angle <= 225:
+			        mode = 'SPIN'
+			    elif angle > 225 and angle < 315:
+			        mode = 'CRAWL'
+			
+                        elif (angle <= 45) or (angle >= 315):
+                            mode = 'FORWARD'
+                        elif (angle >= 135) and (angle <= 225):
+                            mode = 'REVERSE'
+    
+                elif mode == 'CRAWL':
+		    if magnitude < 10 and current_speed == 0:
+		        mode = 'IDLE'
+			time.sleep(0.1)
+			continue
 
-                if magnitude > 10 and mode == 'FORWARD':
-                    if angle <= 180:
-                        turn_direction = 'RIGHT'
-                        turn_angle = angle
-    #                    print("TURN RIGHT {}".format(turn_angle))
+		elif mode == 'SPIN':
+		    if magnitude < 10 and current_speed == 0:
+		        mode = 'IDLE'
+			time.sleep(0.1)
+			continue
+		     
+                elif mode == 'FORWARD' or mode == 'REVERSE':
+                    turn_direction = 'NONE'
+                    turn_angle = 0
+                    submode = ""
+                    accel_profile = ""
+                    start_angle = 0
+                    end_angle = 0
+                    start_m1_speed = 0.0
+                    end_m1_speed = 0.0
+                    start_m2_speed = 0.0
+                    end_m2_speed = 0.0
+    
+                    if magnitude == 0 and current_speed == 0 and target_speed == 0:
+                        target_m1_speed = 0.0
+                        target_m2_speed = 0.0
+                        mode = 'IDLE'
+			time.sleep(0.1)
+                        continue
+    
+                    if magnitude > 10 and mode == 'FORWARD':
+                        if angle <= 180:
+                            turn_direction = 'RIGHT'
+                            turn_angle = angle
+        #                    print("TURN RIGHT {}".format(turn_angle))
+                        else:
+                            turn_direction = 'LEFT'
+                            turn_angle = 360 - angle
+        #                    print("TURN LEFT {}".format(turn_angle))
+                    elif magnitude > 10:
+                        if angle <= 180:
+                            turn_direction = 'RIGHT'
+                            turn_angle = 180 - angle
+        #                    print("TURN RIGHT {}".format(turn_angle))
+                        else:
+                            turn_direction = 'LEFT'
+                            turn_angle = 180 - (360 - angle)
+        #                    print("TURN LEFT {}".format(turn_angle))
+    
+                    if magnitude > 10:
+                        for i in range(0, len(JOY_MODES) - 1):
+                            submode, start_angle, start_m1_speed, start_m2_speed, \
+                                accel_profile = JOY_MODES[i]
+                            next_submode, end_angle, end_m1_speed, end_m2_speed, \
+                                next_accel_profile = JOY_MODES[i + 1]
+                            if turn_angle >= start_angle and \
+                               turn_angle < end_angle:
+                                break
+    
+                        target_m1_speed = linear_map(turn_angle, start_angle,
+                                                     end_angle, start_m1_speed,
+                                                     end_m1_speed)
+                        target_m2_speed = linear_map(turn_angle, start_angle,
+                                                     end_angle, start_m2_speed,
+                                                     end_m2_speed)
                     else:
-                        turn_direction = 'LEFT'
-                        turn_angle = 360 - angle
-    #                    print("TURN LEFT {}".format(turn_angle))
-                elif magnitude > 10:
-                    if angle <= 180:
-                        turn_direction = 'RIGHT'
-                        turn_angle = 180 - angle
-    #                    print("TURN RIGHT {}".format(turn_angle))
-                    else:
-                        turn_direction = 'LEFT'
-                        turn_angle = 180 - (360 - angle)
-    #                    print("TURN LEFT {}".format(turn_angle))
-
-                if magnitude > 10:
-                    for i in range(0, len(JOY_MODES) - 1):
-                        submode, start_angle, start_m1_speed, start_m2_speed, \
-                            accel_profile = JOY_MODES[i]
-                        next_submode, end_angle, end_m1_speed, end_m2_speed, \
-                            next_accel_profile = JOY_MODES[i + 1]
-                        if turn_angle >= start_angle and \
-                           turn_angle < end_angle:
-                            break
-
-                    target_m1_speed = linear_map(turn_angle, start_angle,
-                                                 end_angle, start_m1_speed,
-                                                 end_m1_speed)
-                    target_m2_speed = linear_map(turn_angle, start_angle,
-                                                 end_angle, start_m2_speed,
-                                                 end_m2_speed)
-                else:
-                    submode = "COAST"
-                    accel_profile = "NORMAL"
-
-    #            print("SUBMODE {:6s} {:4.2f} {:4.2f} {} {}".format(
-    #                  submode, m1_speed, m2_speed, start_angle, end_angle))
-
-                if mode == 'FORWARD':
-                    if button_z:
-                        target_max_speed = ((TURBO_MAX_FWD_SPEED -
-                                             TURBO_MAX_TURN_FWD_SPEED) *
-                                            ((135.0 - float(turn_angle)) / 135.0)) + \
-                            TURBO_MAX_TURN_FWD_SPEED
-                    else:
-                        target_max_speed = ((MAX_FWD_SPEED - MAX_TURN_FWD_SPEED) *
+                        submode = "COAST"
+                        accel_profile = "NORMAL"
+    
+        #            print("SUBMODE {:6s} {:4.2f} {:4.2f} {} {}".format(
+        #                  submode, m1_speed, m2_speed, start_angle, end_angle))
+    
+                    if mode == 'FORWARD':
+                        if button_z:
+                            target_max_speed = ((TURBO_MAX_FWD_SPEED -
+                                                 TURBO_MAX_TURN_FWD_SPEED) *
+                                                ((135.0 - float(turn_angle)) / 135.0)) + \
+                                TURBO_MAX_TURN_FWD_SPEED
+                        else:
+                            target_max_speed = ((MAX_FWD_SPEED - MAX_TURN_FWD_SPEED) *
+                                                ((135.0 - float(turn_angle)) / 135.0)) + \
+                                MAX_TURN_FWD_SPEED
+    
+                    elif mode == 'REVERSE':
+                        target_max_speed = ((MAX_REV_SPEED - MAX_TURN_REV_SPEED) *
                                             ((135.0 - float(turn_angle)) / 135.0)) + \
                             MAX_TURN_FWD_SPEED
-
-                elif mode == 'REVERSE':
-                    target_max_speed = ((MAX_REV_SPEED - MAX_TURN_REV_SPEED) *
-                                        ((135.0 - float(turn_angle)) / 135.0)) + \
-                        MAX_TURN_FWD_SPEED
-
-                if submode != 'COAST':
-                    target_speed = gamma(magnitude) / 100.0
-                else:
-                    target_speed = 0.0
-                    target_m1_speed = 0.0
-                    target_m2_speed = 0.0
-
-                if accel_profile == 'NORMAL' and button_z:
-                    accel_profile = 'TURBO'
-
-                current_speed = process_accel(target_speed, current_speed,
-                                              accel_profile)
-                current_max_speed = process_accel(target_max_speed, current_max_speed,
+    
+                    if submode != 'COAST':
+                        target_speed = gamma(magnitude) / 100.0
+                    else:
+                        target_speed = 0.0
+                        target_m1_speed = 0.0
+                        target_m2_speed = 0.0
+    
+                    if accel_profile == 'NORMAL' and button_z:
+                        accel_profile = 'TURBO'
+    
+                    current_speed = process_accel(target_speed, current_speed,
                                                   accel_profile)
-                current_m1_speed = process_accel(target_m1_speed,
-                                                 current_m1_speed,
-                                                 accel_profile)
-                current_m2_speed = process_accel(target_m2_speed,
-                                                 current_m2_speed,
-                                                 accel_profile)
+                    current_max_speed = process_accel(target_max_speed, current_max_speed,
+                                                      accel_profile)
+                    current_m1_speed = process_accel(target_m1_speed,
+                                                     current_m1_speed,
+                                                     accel_profile)
+                    current_m2_speed = process_accel(target_m2_speed,
+                                                     current_m2_speed,
+                                                     accel_profile)
+    
+    #                print("TARGET {} {} {}".format(target_speed, target_m1_speed,
+    #                                               target_m2_speed))
+    #                print("CURRENT {} {} {}".format(current_speed, current_m1_speed,
+    #                                                current_m2_speed))
+    
+                    if turn_direction == 'LEFT':
+                        left_motor = math.sqrt(
+                            current_m2_speed * current_speed) * current_max_speed
+                        right_motor = math.sqrt(
+                            current_m1_speed * current_speed) * current_max_speed
+                    elif turn_direction == 'RIGHT':
+                        left_motor = math.sqrt(
+                            current_m1_speed * current_speed) * current_max_speed
+                        right_motor = math.sqrt(
+                            current_m2_speed * current_speed) * current_max_speed
+                    else:
+                        left_motor = current_speed * current_max_speed
+                        right_motor = current_speed * current_max_speed
+    
+                    left_motor *= 0.96
+    
+                    if mode == 'REVERSE':
+                        left_motor *= -1.0
+                        right_motor *= -1.0
+    
+                    left_motor *= MOTOR_MULTIPLIER
+                    right_motor *= MOTOR_MULTIPLIER
+    
+            self._motors.speed(left_motor, right_motor)
+    
+            volts = self._motors.volts()
+            volts = "{:4.1f} ({:5.2f})".format(volts, volts / 3)
 
-#                print("TARGET {} {} {}".format(target_speed, target_m1_speed,
-#                                               target_m2_speed))
-#                print("CURRENT {} {} {}".format(current_speed, current_m1_speed,
-#                                                current_m2_speed))
-
-                if turn_direction == 'LEFT':
-                    left_motor = math.sqrt(
-                        current_m2_speed * current_speed) * current_max_speed
-                    right_motor = math.sqrt(
-                        current_m1_speed * current_speed) * current_max_speed
-                elif turn_direction == 'RIGHT':
-                    left_motor = math.sqrt(
-                        current_m1_speed * current_speed) * current_max_speed
-                    right_motor = math.sqrt(
-                        current_m2_speed * current_speed) * current_max_speed
-                else:
-                    left_motor = current_speed * current_max_speed
-                    right_motor = current_speed * current_max_speed
-
-                left_motor *= 0.96
-
-                if mode == 'REVERSE':
-                    left_motor *= -1.0
-                    right_motor *= -1.0
-
-                left_motor *= MOTOR_MULTIPLIER
-                right_motor *= MOTOR_MULTIPLIER
-
-        robotec_exec(ser, "!G 2 {}".format(-1 * int(left_motor)))
-        robotec_exec(ser, "!G 1 {}".format(int(right_motor)))
-
-        volts = robotec_exec(ser, "?V")[2:]
-        volts = float(volts.split(':')[1]) / 10
-        volts = "{:4.1f} ({:5.2f})".format(volts, volts / 3)
-        amps = robotec_exec(ser, "?BA")[3:]
-        amps_l = float(amps.split(':')[0]) / 10
-        amps_r = float(amps.split(':')[1]) / 10
-        amps = "{:4.1f} {:4.1f}".format(amps_l, amps_r)
-
-        dump_status(mode, submode, magnitude, angle, int(left_motor),
-                    int(right_motor), volts, amps, current_speed, current_m1_speed, current_m2_speed, current_max_speed)
-        time.sleep(0.1)
-
-
+	    amps_l, amps_r = self._motors.amps()
+            amps = "{:4.1f} {:4.1f}".format(amps_l, amps_r)
+    
+            dump_status(mode, submode, magnitude, angle, int(left_motor),
+                        int(right_motor), volts, amps, current_speed, current_m1_speed, current_m2_speed, current_max_speed)
+            time.sleep(0.1)
+    
+    
 atexit.register(shutdown)
-control_loop()
+sofamatic = sofa()
+sofamatic.control_loop()
