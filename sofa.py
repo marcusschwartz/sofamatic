@@ -87,6 +87,7 @@ def process_accel(target_speed, current_speed, accel_profile):
         'NORMAL': [0.05, 0.1, 0.1],
         'TURBO': [0.1, 0.1, 0.1],
         'BRAKE': [0.1, 0.3, 0.1],
+	'SPIN': [0.05, 0.15, 0.05],
     }
 
     if target_speed > current_speed:
@@ -187,24 +188,28 @@ class sofa:
                 elif mode == 'SPIN':
                     if magnitude < 10 and current_speed == 0:
                         mode = 'IDLE'
+			taret_speed = 0.0
+			target_m1_speed = 0.0
+			target_m2_speed = 0.0
+			target_max_speed = 0.0
                         time.sleep(0.1)
                         continue
 
-                    if set(0, 90, 180, 270, 360).contains(angle):
+                    if angle in set([0, 180, 360]):
                         submode = 'NONE'
                         turn_speed = 0
-                    elif angle < 90:
+                    elif angle <= 90:
                         submode = 'RIGHT'
-                        turn_speed = linear_map(angle, 0, 90, 1.0, 0.0)
+                        turn_speed = linear_map(angle, 0, 90, 0.0, 1.0)
                     elif angle < 180:
-                        submode = 'LEFT'
-                        turn_speed = linear_map(angle, 90, 180, 0.0, 1.0)
-                    elif angle < 270:
                         submode = 'RIGHT'
-                        turn_speed = linear_map(angle, 180, 270, 1.0, 0.0)
+                        turn_speed = linear_map(angle, 90, 180, 1.0, 0.0)
+                    elif angle <= 270:
+                        submode = 'LEFT'
+                        turn_speed = linear_map(angle, 180, 270, 0.0, 1.0)
                     else:
                         submode = 'LEFT'
-                        turn_speed = linear_map(angle, 270, 360, 0.0, 1.0)
+                        turn_speed = linear_map(angle, 270, 360, 1.0, 0.0)
 
                     if submode == 'LEFT':
                         target_m1_speed = turn_speed * -1.0
@@ -220,7 +225,7 @@ class sofa:
 
                     accel_profile = 'SPIN'
 
-                    target_max_speed = 0.2
+                    target_max_speed = 0.20
 
                     current_speed = process_accel(target_speed, current_speed,
                                                   accel_profile)
@@ -233,11 +238,26 @@ class sofa:
                                                      current_m2_speed,
                                                      accel_profile)
 
+                    left_motor = math.sqrt(
+                            abs(current_m2_speed) * current_speed) * current_max_speed
+                    right_motor = math.sqrt(
+                            abs(current_m1_speed) * current_speed) * current_max_speed
+	 	    print("MOTORS {} {}".format(left_motor, right_motor))
+		    if current_m1_speed < 0:
+		        left_motor *= -1.0
+
+		    if current_m2_speed < 0:
+		        right_motor *= -1.0
+
+		    left_motor *= MOTOR_MULTIPLIER
+		    right_motor *= MOTOR_MULTIPLIER
+
                 elif mode == 'FORWARD' or mode == 'REVERSE':
                     turn_direction = 'NONE'
                     turn_angle = 0
                     submode = ""
                     accel_profile = ""
+
                     start_angle = 0
                     end_angle = 0
                     start_m1_speed = 0.0
