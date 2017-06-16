@@ -52,6 +52,7 @@ MOTOR_MULTIPLIER = 900
 PI = 3.14159
 E = 2.7182
 
+
 def shutdown():
     """remove any evidence of our running"""
     try:
@@ -62,8 +63,8 @@ def shutdown():
 
 def gamma(orig):
     """make smaller values appear larger"""
-    output = orig/10
-    gam = (E**(output/4.1))-1
+    output = orig / 10
+    gam = (E**(output / 4.1)) - 1
     return gam * 10
 
 
@@ -107,11 +108,11 @@ def get_joystick_vector(joy_x, joy_y):
         magnitude = 100
     angle = 0.0
     if joy_y > 0:
-        angle = math.atan(abs(1.0 * joy_x)/abs(1.0 * joy_y))
+        angle = math.atan(abs(1.0 * joy_x) / abs(1.0 * joy_y))
         if joy_x < 0:
             angle = PI * 2 - angle
     elif joy_y < 0:
-        angle = math.atan(abs(1.0 * joy_x)/abs(1.0 * joy_y))
+        angle = math.atan(abs(1.0 * joy_x) / abs(1.0 * joy_y))
         if joy_x > 0:
             angle = PI - angle
         elif joy_x < 0:
@@ -194,10 +195,10 @@ def linear_map(i, i_min, i_max, o_min, o_max):
     """mapping function"""
     if o_max > o_min:
         out = (float((i - i_min)) / float(i_max - i_min)) * \
-          float(o_max - o_min) + o_min
+            float(o_max - o_min) + o_min
     else:
         out = (1.0 - (float(i - i_min) / float(i_max - i_min))) * \
-          float(o_min - o_max) + o_max
+            float(o_min - o_max) + o_max
     return out
 
 
@@ -234,6 +235,7 @@ def process_accel(target_speed, current_speed, accel_profile):
 def cuberoot(n):
     return n ** (1.0 / 3)
 
+
 def control_loop():
     """the main logic"""
     mode = 'IDLE'
@@ -264,7 +266,7 @@ def control_loop():
 
     while True:
         magnitude, angle, button_c, button_z = get_joystick(sock)
-	 
+
         if magnitude < 0:
             missed_data += 1
             if missed_data > 3:
@@ -298,8 +300,8 @@ def control_loop():
                 end_m2_speed = 0.0
 
                 if magnitude == 0 and current_speed == 0 and target_speed == 0:
-		    target_m1_speed = 0.0
-		    target_m2_speed = 0.0
+                    target_m1_speed = 0.0
+                    target_m2_speed = 0.0
                     mode = 'IDLE'
                     continue
 
@@ -325,9 +327,9 @@ def control_loop():
                 if magnitude > 10:
                     for i in range(0, len(JOY_MODES) - 1):
                         submode, start_angle, start_m1_speed, start_m2_speed, \
-                          accel_profile = JOY_MODES[i]
+                            accel_profile = JOY_MODES[i]
                         next_submode, end_angle, end_m1_speed, end_m2_speed, \
-                            next_accel_profile = JOY_MODES[i+1]
+                            next_accel_profile = JOY_MODES[i + 1]
                         if turn_angle >= start_angle and \
                            turn_angle < end_angle:
                             break
@@ -340,7 +342,7 @@ def control_loop():
                                                  end_m2_speed)
                 else:
                     submode = "COAST"
-		    accel_profile = "NORMAL"
+                    accel_profile = "NORMAL"
 
     #            print("SUBMODE {:6s} {:4.2f} {:4.2f} {} {}".format(
     #                  submode, m1_speed, m2_speed, start_angle, end_angle))
@@ -348,25 +350,25 @@ def control_loop():
                 if mode == 'FORWARD':
                     if button_z:
                         target_max_speed = ((TURBO_MAX_FWD_SPEED -
-                                      TURBO_MAX_TURN_FWD_SPEED) *
-                                     ((135.0 - float(turn_angle)) / 135.0)) + \
-                                        TURBO_MAX_TURN_FWD_SPEED
+                                             TURBO_MAX_TURN_FWD_SPEED) *
+                                            ((135.0 - float(turn_angle)) / 135.0)) + \
+                            TURBO_MAX_TURN_FWD_SPEED
                     else:
                         target_max_speed = ((MAX_FWD_SPEED - MAX_TURN_FWD_SPEED) *
-                                     ((135.0 - float(turn_angle)) / 135.0)) + \
-                                        MAX_TURN_FWD_SPEED
+                                            ((135.0 - float(turn_angle)) / 135.0)) + \
+                            MAX_TURN_FWD_SPEED
 
                 elif mode == 'REVERSE':
                     target_max_speed = ((MAX_REV_SPEED - MAX_TURN_REV_SPEED) *
-                                 ((135.0 - float(turn_angle)) / 135.0)) + \
-                                    MAX_TURN_FWD_SPEED
+                                        ((135.0 - float(turn_angle)) / 135.0)) + \
+                        MAX_TURN_FWD_SPEED
 
                 if submode != 'COAST':
                     target_speed = gamma(magnitude) / 100.0
                 else:
                     target_speed = 0.0
-		    target_m1_speed = 0.0
-		    target_m2_speed = 0.0
+                    target_m1_speed = 0.0
+                    target_m2_speed = 0.0
 
                 if accel_profile == 'NORMAL' and button_z:
                     accel_profile = 'TURBO'
@@ -374,7 +376,7 @@ def control_loop():
                 current_speed = process_accel(target_speed, current_speed,
                                               accel_profile)
                 current_max_speed = process_accel(target_max_speed, current_max_speed,
-                                              accel_profile)
+                                                  accel_profile)
                 current_m1_speed = process_accel(target_m1_speed,
                                                  current_m1_speed,
                                                  accel_profile)
@@ -388,11 +390,15 @@ def control_loop():
 #                                                current_m2_speed))
 
                 if turn_direction == 'LEFT':
-                    left_motor = math.sqrt(current_m2_speed * current_speed) * current_max_speed
-                    right_motor = math.sqrt(current_m1_speed * current_speed) * current_max_speed
+                    left_motor = math.sqrt(
+                        current_m2_speed * current_speed) * current_max_speed
+                    right_motor = math.sqrt(
+                        current_m1_speed * current_speed) * current_max_speed
                 elif turn_direction == 'RIGHT':
-                    left_motor = math.sqrt(current_m1_speed * current_speed) * current_max_speed
-                    right_motor = math.sqrt(current_m2_speed * current_speed) * current_max_speed
+                    left_motor = math.sqrt(
+                        current_m1_speed * current_speed) * current_max_speed
+                    right_motor = math.sqrt(
+                        current_m2_speed * current_speed) * current_max_speed
                 else:
                     left_motor = current_speed * current_max_speed
                     right_motor = current_speed * current_max_speed
@@ -402,10 +408,9 @@ def control_loop():
                 if mode == 'REVERSE':
                     left_motor *= -1.0
                     right_motor *= -1.0
-		
-		left_motor *= MOTOR_MULTIPLIER
-		right_motor *= MOTOR_MULTIPLIER
 
+                left_motor *= MOTOR_MULTIPLIER
+                right_motor *= MOTOR_MULTIPLIER
 
         robotec_exec(ser, "!G 2 {}".format(-1 * int(left_motor)))
         robotec_exec(ser, "!G 1 {}".format(int(right_motor)))
