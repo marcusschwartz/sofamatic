@@ -199,6 +199,34 @@ def linear_map(i, i_min, i_max, o_min, o_max):
     return out
 
 
+def process_accel(current_speed, target_speed, accel_profile):
+    """do the accel/decel thing"""
+    accel_profiles = {
+        'NORMAL': [target_speed / 20.0, current_speed / 20.0],
+        'TURBO': [target_speed / 10.0, current_speed / 20.0],
+        'BRAKE': [target_speed / 20.0, current_speed / 7.0],
+    }
+
+    if target_speed > current_speed:
+        # accelerate
+        accel_rate = accel_profiles[accel_profile][0]
+        print "ACCEL {} {}".format(current_speed, accel_rate)
+        current_speed += accel_rate
+        if current_speed > target_speed:
+            current_speed = target_speed
+
+    elif target_speed < current_speed:
+        # deccelerate
+        decel_rate = accel_profiles[accel_profile][1]
+        if decel_rate < 35:
+            decel_rate = 35
+        print "DECEL {} {}".format(current_speed, decel_rate)
+        current_speed -= decel_rate
+        if current_speed < target_speed:
+            current_speed = target_speed
+
+
+>>>>>>> try generalizing accel
 def control_loop():
     """the main logic"""
     mode = 'IDLE'
@@ -218,8 +246,11 @@ def control_loop():
     target_speed = 0.0
     current_speed = 0.0
 
-    m1_speed = 0.0
-    m2_speed = 0.0
+    target_m1_speed = 0.0
+    target_m2_speed = 0.0
+
+    current_m1_speed = 0.0
+    current_m2_speed = 0.0
 
     while True:
         magnitude, angle, button_c, button_z = get_joystick(sock)
@@ -289,10 +320,12 @@ def control_loop():
                            turn_angle < end_angle:
                             break
 
-                    m1_speed = linear_map(turn_angle, start_angle, end_angle,
-                                          start_m1_speed, end_m1_speed)
-                    m2_speed = linear_map(turn_angle, start_angle, end_angle,
-                                          start_m2_speed, end_m2_speed)
+                    target_m1_speed = linear_map(turn_angle, start_angle,
+                                                 end_angle, start_m1_speed,
+                                                 end_m1_speed)
+                    target_m2_speed = linear_map(turn_angle, start_angle,
+                                                 end_angle, start_m2_speed,
+                                                 end_m2_speed)
                 else:
                     submode = "COAST"
 
@@ -320,10 +353,26 @@ def control_loop():
                 else:
                     target_speed = 0
 
-                print("TARGET {} {} {}".format(target_speed, m1_speed,
-                                               m2_speed))
-                print("CURRENT {} {} {}".format(current_speed, m1_speed,
-                                                m2_speed))
+                print("TARGET {} {} {}".format(target_speed, target_m1_speed,
+                                               target_m2_speed))
+                print("CURRENT {} {} {}".format(current_speed, target_m1_speed,
+                                                target_m2_speed))
+
+                if accel_profile == 'NORMAL' and button_z:
+                    accel_profile = 'TURBO'
+
+                target_speed_new = process_accel(target_speed, current_speed,
+                                                 accel_profile)
+                target_m1_speed_new = process_accel(target_m1_speed,
+                                                    current_m1_speed,
+                                                    'm_' + accel_profile)
+                target_m2_speed_new = process_accel(target_m2_speed,
+                                                    current_m2_speed,
+                                                    'm_' + accel_profile)
+
+                print "TARGET {} {} {}".format(target_speed_new,
+                                               target_m1_speed_new,
+                                               target_m2_speed_new)
 
                 if target_speed > current_speed:
                     # accelerate
@@ -348,11 +397,11 @@ def control_loop():
                         current_speed = target_speed
 
                 if turn_direction == 'LEFT':
-                    left_motor = m2_speed * current_speed
-                    right_motor = m1_speed * current_speed
+                    left_motor = current_m2_speed * current_speed
+                    right_motor = current_m1_speed * current_speed
                 elif turn_direction == 'RIGHT':
-                    left_motor = m1_speed * current_speed
-                    right_motor = m2_speed * current_speed
+                    left_motor = current_m1_speed * current_speed
+                    right_motor = current_m2_speed * current_speed
                 else:
                     left_motor = current_speed
                     right_motor = current_speed
@@ -378,7 +427,6 @@ def control_loop():
                     int(right_motor), volts, amps)
         time.sleep(0.1)
 
+
 atexit.register(shutdown)
 control_loop()
-
-
