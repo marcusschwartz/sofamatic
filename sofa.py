@@ -3,13 +3,11 @@
 import atexit
 import math
 import os
-import socket
 import tempfile
 import time
+
 import joystick
 import motors
-
-import serial
 
 JOY_MODES = [
     # name, start_angle, m1_speed, m2_speed, accel_profile
@@ -41,7 +39,7 @@ def shutdown():
     """remove any evidence of our running"""
     try:
         os.unlink("/var/run/sofa_status")
-    except:
+    except BaseException:
         pass
 
 
@@ -55,8 +53,10 @@ def gamma(orig):
 def dump_status(mode, submode, magnitude, angle, left_motor, right_motor,
                 volts, amps, speed, m1_speed, m2_speed, max_speed):
     """output interesting metrics to stdout and a status file"""
-    print("{:8s} {:8s} {:3d}% {:3d}o {:5.0f},{:5.0f} {} {} {:3.2f} {:3.2f} {:3.2f} {:3.2f}".format(
-        mode, submode, magnitude, angle, left_motor, right_motor, volts, amps, speed, m1_speed, m2_speed, max_speed))
+    print(
+        "{:8s} {:8s} {:3d}% {:3d}o {:5.0f},{:5.0f} {} {} {:3.2f} {:3.2f} {:3.2f} {:3.2f}".format(
+            mode, submode, magnitude, angle, left_motor, right_motor, volts, amps, speed,
+            m1_speed, m2_speed, max_speed))
     status = tempfile.NamedTemporaryFile(dir="/var/run", delete=False)
     status_temp_file = status.name
     now = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -92,7 +92,7 @@ def process_accel(target_speed, current_speed, accel_profile):
     if target_speed > current_speed:
         # accelerate
         accel_rate = accel_profiles[accel_profile][0]
-#        print "ACCEL {} {} {}".format(accel_profile, current_speed, accel_rate)
+# print "ACCEL {} {} {}".format(accel_profile, current_speed, accel_rate)
         current_speed += accel_rate
         if current_speed > target_speed:
             current_speed = target_speed
@@ -103,7 +103,7 @@ def process_accel(target_speed, current_speed, accel_profile):
         min_decel_rate = accel_profiles[accel_profile][2]
         if decel_rate < min_decel_rate:
             decel_rate = min_decel_rate
-#        print "DECEL {} {} {}".format(accel_profile, current_speed, decel_rate)
+# print "DECEL {} {} {}".format(accel_profile, current_speed, decel_rate)
         current_speed -= decel_rate
         if current_speed < target_speed:
             current_speed = target_speed
@@ -127,8 +127,6 @@ class sofa:
         """the main logic"""
         mode = 'IDLE'
         submode = ''
-
-        ser = serial.Serial("/dev/ttyACM0", 115200, timeout=1)
 
         left_motor = 0.0
         right_motor = 0.0
@@ -251,7 +249,7 @@ class sofa:
                         accel_profile = "NORMAL"
 
         #            print("SUBMODE {:6s} {:4.2f} {:4.2f} {} {}".format(
-        #                  submode, m1_speed, m2_speed, start_angle, end_angle))
+        # submode, m1_speed, m2_speed, start_angle, end_angle))
 
                     if mode == 'FORWARD':
                         if button_z:
@@ -260,14 +258,12 @@ class sofa:
                                                 ((135.0 - float(turn_angle)) / 135.0)) + \
                                 TURBO_MAX_TURN_FWD_SPEED
                         else:
-                            target_max_speed = ((MAX_FWD_SPEED - MAX_TURN_FWD_SPEED) *
-                                                ((135.0 - float(turn_angle)) / 135.0)) + \
-                                MAX_TURN_FWD_SPEED
+                            target_max_speed = ((MAX_FWD_SPEED - MAX_TURN_FWD_SPEED) * (
+                                (135.0 - float(turn_angle)) / 135.0)) + MAX_TURN_FWD_SPEED
 
                     elif mode == 'REVERSE':
-                        target_max_speed = ((MAX_REV_SPEED - MAX_TURN_REV_SPEED) *
-                                            ((135.0 - float(turn_angle)) / 135.0)) + \
-                            MAX_TURN_FWD_SPEED
+                        target_max_speed = ((MAX_REV_SPEED - MAX_TURN_REV_SPEED) * (
+                            (135.0 - float(turn_angle)) / 135.0)) + MAX_TURN_FWD_SPEED
 
                     if submode != 'COAST':
                         target_speed = gamma(magnitude) / 100.0
@@ -281,8 +277,8 @@ class sofa:
 
                     current_speed = process_accel(target_speed, current_speed,
                                                   accel_profile)
-                    current_max_speed = process_accel(target_max_speed, current_max_speed,
-                                                      accel_profile)
+                    current_max_speed = process_accel(
+                        target_max_speed, current_max_speed, accel_profile)
                     current_m1_speed = process_accel(target_m1_speed,
                                                      current_m1_speed,
                                                      accel_profile)
@@ -327,7 +323,8 @@ class sofa:
             amps = "{:4.1f} {:4.1f}".format(amps_l, amps_r)
 
             dump_status(mode, submode, magnitude, angle, int(left_motor),
-                        int(right_motor), volts, amps, current_speed, current_m1_speed, current_m2_speed, current_max_speed)
+                        int(right_motor), volts, amps, current_speed,
+                        current_m1_speed, current_m2_speed, current_max_speed)
             time.sleep(0.1)
 
 
