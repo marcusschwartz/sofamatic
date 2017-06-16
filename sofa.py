@@ -190,6 +190,49 @@ class sofa:
                         time.sleep(0.1)
                         continue
 
+                    if set(0, 90, 180, 270, 360).contains(angle):
+                        submode = 'NONE'
+                        turn_speed = 0
+                    elif angle < 90:
+                        submode = 'RIGHT'
+                        turn_speed = linear_map(angle, 0, 90, 1.0, 0.0)
+                    elif angle < 180:
+                        submode = 'LEFT'
+                        turn_speed = linear_map(angle, 90, 180, 0.0, 1.0)
+                    elif angle < 270:
+                        submode = 'RIGHT'
+                        turn_speed = linear_map(angle, 180, 270, 1.0, 0.0)
+                    else:
+                        submode = 'LEFT'
+                        turn_speed = linear_map(angle, 270, 360, 0.0, 1.0)
+
+                    if submode == 'LEFT':
+                        target_m1_speed = turn_speed * -1.0
+                        target_m2_speed = turn_speed
+                    elif submode == 'RIGHT':
+                        target_m1_speed = turn_speed
+                        target_m2_speed = turn_speed * -1.0
+                    else:
+                        target_m1_speed = 0
+                        target_m2_speed = 0
+
+                    target_speed = gamma(magnitude) / 100.0
+
+                    accel_profile = 'SPIN'
+
+                    target_max_speed = 0.2
+
+                    current_speed = process_accel(target_speed, current_speed,
+                                                  accel_profile)
+                    current_max_speed = process_accel(
+                        target_max_speed, current_max_speed, accel_profile)
+                    current_m1_speed = process_accel(target_m1_speed,
+                                                     current_m1_speed,
+                                                     accel_profile)
+                    current_m2_speed = process_accel(target_m2_speed,
+                                                     current_m2_speed,
+                                                     accel_profile)
+
                 elif mode == 'FORWARD' or mode == 'REVERSE':
                     turn_direction = 'NONE'
                     turn_angle = 0
