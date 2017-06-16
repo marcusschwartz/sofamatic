@@ -2,6 +2,7 @@
 
 import serial
 
+
 class roboteq:
     def __init__(self, path="/dev/ttyACM0", speed=115200):
         self._roboteq = serial.Serial(path, speed, timeout=1)
@@ -13,13 +14,13 @@ class roboteq:
     def volts(self):
         volts = self.roboteq_exec("?V")[2:]
         volts = float(volts.split(':')[1]) / 10
-	return volts
+        return volts
 
     def amps(self):
         amps = self.roboteq_exec("?BA")[3:]
         amps_l = float(amps.split(':')[0]) / 10
         amps_r = float(amps.split(':')[1]) / 10
-	return amps_l, amps_r
+        return amps_l, amps_r
 
     def roboteq_exec(self, cmd):
         """run a motor controller command and return the results"""
@@ -33,5 +34,5 @@ class roboteq:
                 newline = True
             else:
                 resp = resp + char
-    
+
         return resp
