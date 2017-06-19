@@ -13,7 +13,7 @@ JOY_MODES = [
     # name, start_angle, m1_speed, m2_speed, accel_profile
     ["STRT", 0, 1.0, 1.0, 'NORMAL'],
     ["TURN", 10, 1.0, 1.0, 'NORMAL'],
-    ["TURN", 90, 1.2, 0.8, 'NORMAL'],
+    ["TURN", 90, 1.2, 0.4, 'NORMAL'],
     ["CRWL", 135, 1.0, 0.0, 'NORMAL'],
     ["STOP", 165, 0.0, 0.0, 'NORMAL'],
     ["BRAKE", 170, 0.0, 0.0, 'BRAKE'],
@@ -84,10 +84,10 @@ def linear_map(i, i_min, i_max, o_min, o_max):
 def process_accel(target_speed, current_speed, accel_profile):
     """do the accel/decel thing"""
     accel_profiles = {
-        'NORMAL': [0.05, 0.1, 0.1],
-        'TURBO': [0.1, 0.1, 0.1],
-        'BRAKE': [0.1, 0.3, 0.1],
-	'SPIN': [0.05, 0.15, 0.05],
+        'NORMAL': [0.03, 0.05, 0.05],
+        'TURBO': [0.1, 0.05, 0.05],
+        'BRAKE': [0.1, 0.2, 0.1],
+	'SPIN': [0.05, 0.05, 0.05],
     }
 
     if target_speed > current_speed:
