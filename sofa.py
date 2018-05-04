@@ -18,7 +18,7 @@ JOY_MODES = [
     ["STRT", 0, 1.0, 1.0, 'NORMAL'],
     ["TURN", 10, 1.0, 1.0, 'NORMAL'],
     ["TURN", 90, 1.2, 0.4, 'NORMAL'],
-    ["CRWL", 135, 1.0, 0.0, 'NORMAL'],
+    ["CRAWL", 135, 1.0, 0.0, 'NORMAL'],
     ["STOP", 165, 0.0, 0.0, 'NORMAL'],
     ["BRAKE", 170, 0.0, 0.0, 'BRAKE'],
     ["", 180, 0.0, 0.0, "BRAKE"],
