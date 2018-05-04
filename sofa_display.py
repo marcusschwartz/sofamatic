@@ -3,29 +3,31 @@
 import time
 import atexit
 
+from OmegaExpansion import oledExp
 
 def shutdown():
     oledExp.clear()
 
+empty = list()
+for line in range(0, 8):
+    empty.append("{:20s}".format(""))
+
+
+def init():
+    oledExp.driverInit()
+    oledExp.clear()
+    oledExp.setTextColumns()
 
 atexit.register(shutdown)
 
-from OmegaExpansion import oledExp
+count = 0
 
-oledExp.driverInit()
-oledExp.clear()
-oledExp.setTextColumns()
-
-current = list()
-for line in range(0, 8):
-    current.append("{:20s}".format(""))
-empty = current
+init()
+current = list(empty)
 
 while True:
     try:
-
         status = open("/var/run/sofa_status")
-
         lines = status.readlines()
         status.close()
         i = 0
@@ -47,7 +49,16 @@ while True:
                 current[i] = line
             i += 1
         time.sleep(0.05)
-    except BaseException:
-        current = empty
-        oledExp.clear()
+        count += 1
+        if count > 1200:
+	    # re-init every 60 seconds because sometimes
+	    # the display gets wonky
+            init()
+	    current=list(empty)
+            count = 0
+    except BaseException as e:
+        print("Exception %s" % e)
+        init()
+        current=list(empty)
         time.sleep(0.05)
+

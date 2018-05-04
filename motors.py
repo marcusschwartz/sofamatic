@@ -8,8 +8,8 @@ class roboteq:
         self._roboteq = serial.Serial(path, speed, timeout=1)
 
     def speed(self, left_motor, right_motor):
-        self.roboteq_exec("!G 2 {}".format(-1 * int(left_motor)))
-        self.roboteq_exec("!G 1 {}".format(int(right_motor)))
+        self.roboteq_exec("!G 1 {}".format(-1 * int(left_motor)))
+        self.roboteq_exec("!G 2 {}".format(int(right_motor)))
 
     def volts(self):
         volts = self.roboteq_exec("?V")[2:]
@@ -18,8 +18,8 @@ class roboteq:
 
     def amps(self):
         amps = self.roboteq_exec("?BA")[3:]
-        amps_l = float(amps.split(':')[0]) / 10
-        amps_r = float(amps.split(':')[1]) / 10
+        amps_l = float(amps.split(':')[1]) / 10
+        amps_r = float(amps.split(':')[0]) / 10
         return amps_l, amps_r
 
     def roboteq_exec(self, cmd):

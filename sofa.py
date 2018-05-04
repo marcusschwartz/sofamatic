@@ -20,11 +20,11 @@ JOY_MODES = [
     ["", 180, 0.0, 0.0, "BRAKE"],
 ]
 
-MAX_FWD_SPEED = 0.33
-MAX_TURN_FWD_SPEED = 0.33
+MAX_FWD_SPEED = 0.25
+MAX_TURN_FWD_SPEED = 0.25
 
-TURBO_MAX_FWD_SPEED = 1.0
-TURBO_MAX_TURN_FWD_SPEED = 0.4
+TURBO_MAX_FWD_SPEED = 0.6
+TURBO_MAX_TURN_FWD_SPEED = 0.6
 
 MAX_REV_SPEED = 0.2
 MAX_TURN_REV_SPEED = 0.2
@@ -186,7 +186,7 @@ class sofa:
                         continue
 
                 elif mode == 'SPIN':
-                    if magnitude < 10 and current_speed == 0:
+                    if magnitude < 10 and current_m1_speed == 0:
                         mode = 'IDLE'
 			taret_speed = 0.0
 			target_m1_speed = 0.0
@@ -337,6 +337,8 @@ class sofa:
                         target_speed = 0.0
                         target_m1_speed = 0.0
                         target_m2_speed = 0.0
+			if current_m1_speed == 0.0 and current_m2_speed == 0.0:
+			    current_speed = 0.0
 
                     if accel_profile == 'NORMAL' and button_z:
                         accel_profile = 'TURBO'
@@ -371,7 +373,7 @@ class sofa:
                         left_motor = current_speed * current_max_speed
                         right_motor = current_speed * current_max_speed
 
-                    left_motor *= 0.96
+                    #left_motor *= 0.96
 
                     if mode == 'REVERSE':
                         left_motor *= -1.0
@@ -380,6 +382,7 @@ class sofa:
                     left_motor *= MOTOR_MULTIPLIER
                     right_motor *= MOTOR_MULTIPLIER
 
+            #self._motors.speed(right_motor, left_motor)
             self._motors.speed(left_motor, right_motor)
 
             volts = self._motors.volts()
