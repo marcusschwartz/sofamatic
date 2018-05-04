@@ -1,6 +1,3 @@
-#!/usr/bin/python
-
-import atexit
 import math
 import os
 import tempfile
@@ -393,8 +390,3 @@ class sofa:
                         int(right_motor), volts, amps, current_speed,
                         current_m1_speed, current_m2_speed, current_max_speed)
             time.sleep(0.1)
-
-
-atexit.register(shutdown)
-sofamatic = sofa()
-sofamatic.control_loop()
