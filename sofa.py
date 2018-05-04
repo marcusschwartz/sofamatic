@@ -9,6 +9,13 @@ import time
 import joystick
 import motors
 
+ACCEL_PROFILES = {
+    'NORMAL': [0.03, 0.05],
+    'TURBO': [0.1, 0.05],
+    'BRAKE': [0.1, 0.2],
+    'SPIN': [0.05, 0.05],
+}
+
 JOY_MODES = [
     # name, start_angle, m1_speed, m2_speed, accel_profile
     ["STRT", 0, 1.0, 1.0, 'NORMAL'],
@@ -83,16 +90,10 @@ def linear_map(i, i_min, i_max, o_min, o_max):
 
 def process_accel(target_speed, current_speed, accel_profile):
     """do the accel/decel thing"""
-    accel_profiles = {
-        'NORMAL': [0.03, 0.05, 0.05],
-        'TURBO': [0.1, 0.05, 0.05],
-        'BRAKE': [0.1, 0.2, 0.1],
-	'SPIN': [0.05, 0.05, 0.05],
-    }
 
     if target_speed > current_speed:
         # accelerate
-        accel_rate = accel_profiles[accel_profile][0]
+        accel_rate = ACCEL_PROFILES[accel_profile][0]
 # print "ACCEL {} {} {}".format(accel_profile, current_speed, accel_rate)
         current_speed += accel_rate
         if current_speed > target_speed:
@@ -100,10 +101,7 @@ def process_accel(target_speed, current_speed, accel_profile):
 
     elif target_speed < current_speed:
         # deccelerate
-        decel_rate = accel_profiles[accel_profile][1]
-        min_decel_rate = accel_profiles[accel_profile][2]
-        if decel_rate < min_decel_rate:
-            decel_rate = min_decel_rate
+        decel_rate = ACCEL_PROFILES[accel_profile][1]
 # print "DECEL {} {} {}".format(accel_profile, current_speed, decel_rate)
         current_speed -= decel_rate
         if current_speed < target_speed:
