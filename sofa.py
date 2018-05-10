@@ -1,10 +1,10 @@
+"""a sofa"""
 import math
-import os
-import tempfile
 import time
 
 import joystick
 import motors
+from status import dump_status
 
 ACCEL_PROFILES = {
     'NORMAL': [0.03, 0.05],
@@ -46,41 +46,6 @@ def gamma(orig):
     return gam * 10
 
 
-def dump_status(status_path, mode, submode, magnitude, angle, left_motor,
-                right_motor, volts, amps, speed, m1_speed, m2_speed,
-                max_speed):
-    """output interesting metrics to stdout and a status file"""
-    print(
-        "{:8s} {:8s} {:3d}% {:3d}o {:5.0f},{:5.0f} {} {} {:3.2f} {:3.2f} {:3.2f} {:3.2f}".format(
-            mode,
-            submode,
-            magnitude,
-            angle,
-            left_motor,
-            right_motor,
-            volts,
-            amps,
-            speed,
-            m1_speed,
-            m2_speed,
-            max_speed))
-
-    if status_path:
-        parent_dir = os.path.dirname(status_path)
-        status = tempfile.NamedTemporaryFile(dir=parent_dir, delete=False)
-        status_temp_file = status.name
-        now = time.strftime("%Y-%m-%d %H:%M:%S")
-        status.write("{}\n".format(now))
-        status.write("MODE        {:8s}\n".format(mode))
-        status.write("NUNCHUK {:3d}% {:3d}o\n".format(magnitude, angle))
-        status.write("MOTOR     {:4.1f} {:4.1f}\n".format(left_motor,
-                                                          right_motor))
-        status.write("VOLTS     {}\n".format(volts))
-        status.write("AMPS        {}\n".format(amps))
-        status.close()
-        os.rename(status_temp_file, status_path)
-
-
 def linear_map(i, i_min, i_max, o_min, o_max):
     """mapping function"""
     if o_max > o_min:
@@ -114,23 +79,22 @@ def process_accel(target_speed, current_speed, accel_profile):
     return current_speed
 
 
-def cuberoot(n):
-    return n ** (1.0 / 3)
+def cuberoot(scalar):
+    '''return the cuberoot of a real number'''
+    return scalar ** (1.0 / 3)
 
 
-class sofa:
+class Sofa(object):
+    '''A skid-steered couch'''
     _motor = None
     _nunchuk = None
     _status_path = None
 
-    def __init__(self, use_motors=True, status_path=None, listen=None):
+    def __init__(self, roboteq_path, status_path, listen):
         self._status_path = status_path
         (addr, port) = listen.split(':')
         self._nunchuk = joystick.nunchuk(addr=addr, port=int(port))
-        if use_motors:
-            self._motors = motors.roboteq()
-        else:
-            self._motors = None
+        self._motors = motors.Roboteq(path=roboteq_path)
 
     def control_loop(self):
         """the main logic"""
@@ -253,7 +217,7 @@ class sofa:
                         abs(current_m2_speed) * current_speed) * current_max_speed
                     right_motor = math.sqrt(
                         abs(current_m1_speed) * current_speed) * current_max_speed
-                    print("MOTORS {} {}".format(left_motor, right_motor))
+                    print "MOTORS {} {}".format(left_motor, right_motor)
                     if current_m1_speed < 0:
                         left_motor *= -1.0
 
@@ -346,8 +310,9 @@ class sofa:
                         target_speed = 0.0
                         target_m1_speed = 0.0
                         target_m2_speed = 0.0
-			if current_m1_speed == 0.0 and current_m2_speed == 0.0:
-			    current_speed = 0.0
+
+                    if current_m1_speed == 0.0 and current_m2_speed == 0.0:
+                        current_speed = 0.0
 
                     if accel_profile == 'NORMAL' and button_z:
                         accel_profile = 'TURBO'
@@ -363,10 +328,10 @@ class sofa:
                                                      current_m2_speed,
                                                      accel_profile)
 
-    #                print("TARGET {} {} {}".format(target_speed, target_m1_speed,
-    #                                               target_m2_speed))
-    #                print("CURRENT {} {} {}".format(current_speed, current_m1_speed,
-    #                                                current_m2_speed))
+#                print("TARGET {} {} {}".format(target_speed, target_m1_speed,
+#                                               target_m2_speed))
+#                print("CURRENT {} {} {}".format(current_speed, current_m1_speed,
+#                                                current_m2_speed))
 
                     if turn_direction == 'LEFT':
                         left_motor = math.sqrt(
@@ -382,7 +347,7 @@ class sofa:
                         left_motor = current_speed * current_max_speed
                         right_motor = current_speed * current_max_speed
 
-                    #left_motor *= 0.96
+#                    #left_motor *= 0.96
 
                     if mode == 'REVERSE':
                         left_motor *= -1.0
@@ -391,17 +356,13 @@ class sofa:
                     left_motor *= MOTOR_MULTIPLIER
                     right_motor *= MOTOR_MULTIPLIER
 
-            if self._motors:
-                self._motors.speed(left_motor, right_motor)
+            self._motors.speed(left_motor, right_motor)
 
-                volts = self._motors.volts()
-                volts = "{:4.1f} ({:5.2f})".format(volts, volts / 3)
+            volts = self._motors.volts()
+            volts = "{:4.1f} ({:5.2f})".format(volts, volts / 3)
 
-                amps_l, amps_r = self._motors.amps()
-                amps = "{:4.1f} {:4.1f}".format(amps_l, amps_r)
-            else:
-                volts = 'UNKN'
-                amps = 'UNKN'
+            amps_l, amps_r = self._motors.amps()
+            amps = "{:4.1f} {:4.1f}".format(amps_l, amps_r)
 
             dump_status(self._status_path, mode, submode, magnitude, angle, int(left_motor),
                         int(right_motor), volts, amps, current_speed,

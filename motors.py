@@ -1,29 +1,45 @@
-#!/usr/bin/python
+'''A roboteq RS232 motor controller with accel/deccel enforcement'''
 
 import serial
 
 
-class roboteq:
+class Roboteq(object):
+    '''A roboteq RS232 motor controller with accel/deccel enforcement'''
     def __init__(self, path="/dev/ttyACM0", speed=115200):
-        self._roboteq = serial.Serial(path, speed, timeout=1)
+        if path:
+            self._roboteq = serial.Serial(path, speed, timeout=1)
+        else:
+            self._roboteq = None
 
-    def speed(self, left_motor, right_motor):
-        self.roboteq_exec("!G 1 {}".format(-1 * int(left_motor)))
-        self.roboteq_exec("!G 2 {}".format(int(right_motor)))
+    def speed(self, m1_target, m2_target):
+        '''set the speed of both motors'''
+        if self._roboteq is None:
+            print "SPEED {} {}".format(int(m1_target), int(m2_target))
+            return
+        self.roboteq_exec("!G 1 {}".format(-1 * int(m1_target)))
+        self.roboteq_exec("!G 2 {}".format(int(m2_target)))
 
     def volts(self):
+        '''return the current battery voltage'''
+        if self._roboteq is None:
+            return -1
         volts = self.roboteq_exec("?V")[2:]
         volts = float(volts.split(':')[1]) / 10
         return volts
 
     def amps(self):
+        '''return the two motor amperages'''
+        if self._roboteq is None:
+            return -1, -1
         amps = self.roboteq_exec("?BA")[3:]
-        amps_l = float(amps.split(':')[1]) / 10
-        amps_r = float(amps.split(':')[0]) / 10
-        return amps_l, amps_r
+        m1_amps = float(amps.split(':')[1]) / 10
+        m2_amps = float(amps.split(':')[0]) / 10
+        return m1_amps, m2_amps
 
     def roboteq_exec(self, cmd):
-        """run a motor controller command and return the results"""
+        '''run a single serial command against the controller'''
+        if self._roboteq is None:
+            return None
         self._roboteq.write(cmd + "\r")
         self._roboteq.read(len(cmd) + 1)
         newline = False
