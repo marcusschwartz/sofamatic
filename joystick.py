@@ -28,9 +28,9 @@ class nunchuk:
     """a calibrated magnitude/angle from a wii nunchuk"""
     _sock = None
 
-    def __init__(self, addr="192.168.3.1", port=31337):
+    def __init__(self, addr="0.0.0.0", port=31337):
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._sock.bind(("192.168.3.1", 31337))
+        self._sock.bind((addr, port))
         self._sock.setblocking(0)
 
     def correct_raw_joystick(self, raw_x, raw_y):

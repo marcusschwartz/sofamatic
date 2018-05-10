@@ -39,14 +39,6 @@ PI = 3.14159
 E = 2.7182
 
 
-def shutdown():
-    """remove any evidence of our running"""
-    try:
-        os.unlink("/var/run/sofa_status")
-    except BaseException:
-        pass
-
-
 def gamma(orig):
     """make smaller values appear larger"""
     output = orig / 10
@@ -54,8 +46,9 @@ def gamma(orig):
     return gam * 10
 
 
-def dump_status(mode, submode, magnitude, angle, left_motor, right_motor,
-                volts, amps, speed, m1_speed, m2_speed, max_speed):
+def dump_status(status_path, mode, submode, magnitude, angle, left_motor,
+                right_motor, volts, amps, speed, m1_speed, m2_speed,
+                max_speed):
     """output interesting metrics to stdout and a status file"""
     print(
         "{:8s} {:8s} {:3d}% {:3d}o {:5.0f},{:5.0f} {} {} {:3.2f} {:3.2f} {:3.2f} {:3.2f}".format(
@@ -71,17 +64,21 @@ def dump_status(mode, submode, magnitude, angle, left_motor, right_motor,
             m1_speed,
             m2_speed,
             max_speed))
-    status = tempfile.NamedTemporaryFile(dir="/var/run", delete=False)
-    status_temp_file = status.name
-    now = time.strftime("%Y-%m-%d %H:%M:%S")
-    status.write("{}\n".format(now))
-    status.write("MODE        {:8s}\n".format(mode))
-    status.write("NUNCHUK {:3d}% {:3d}o\n".format(magnitude, angle))
-    status.write("MOTOR     {:4.1f} {:4.1f}\n".format(left_motor, right_motor))
-    status.write("VOLTS     {}\n".format(volts))
-    status.write("AMPS        {}\n".format(amps))
-    status.close()
-    os.rename(status_temp_file, "/var/run/sofa_status")
+
+    if status_path:
+        parent_dir = os.path.dirname(status_path)
+        status = tempfile.NamedTemporaryFile(dir=parent_dir, delete=False)
+        status_temp_file = status.name
+        now = time.strftime("%Y-%m-%d %H:%M:%S")
+        status.write("{}\n".format(now))
+        status.write("MODE        {:8s}\n".format(mode))
+        status.write("NUNCHUK {:3d}% {:3d}o\n".format(magnitude, angle))
+        status.write("MOTOR     {:4.1f} {:4.1f}\n".format(left_motor,
+                                                          right_motor))
+        status.write("VOLTS     {}\n".format(volts))
+        status.write("AMPS        {}\n".format(amps))
+        status.close()
+        os.rename(status_temp_file, status_path)
 
 
 def linear_map(i, i_min, i_max, o_min, o_max):
@@ -124,10 +121,16 @@ def cuberoot(n):
 class sofa:
     _motor = None
     _nunchuk = None
+    _status_path = None
 
-    def __init__(self):
-        self._nunchuk = joystick.nunchuk()
-        self._motors = motors.roboteq()
+    def __init__(self, use_motors=True, status_path=None, listen=None):
+        self._status_path = status_path
+        (addr, port) = listen.split(':')
+        self._nunchuk = joystick.nunchuk(addr=addr, port=int(port))
+        if use_motors:
+            self._motors = motors.roboteq()
+        else:
+            self._motors = None
 
     def control_loop(self):
         """the main logic"""
@@ -388,16 +391,19 @@ class sofa:
                     left_motor *= MOTOR_MULTIPLIER
                     right_motor *= MOTOR_MULTIPLIER
 
-            #self._motors.speed(right_motor, left_motor)
-            self._motors.speed(left_motor, right_motor)
+            if self._motors:
+                self._motors.speed(left_motor, right_motor)
 
-            volts = self._motors.volts()
-            volts = "{:4.1f} ({:5.2f})".format(volts, volts / 3)
+                volts = self._motors.volts()
+                volts = "{:4.1f} ({:5.2f})".format(volts, volts / 3)
 
-            amps_l, amps_r = self._motors.amps()
-            amps = "{:4.1f} {:4.1f}".format(amps_l, amps_r)
+                amps_l, amps_r = self._motors.amps()
+                amps = "{:4.1f} {:4.1f}".format(amps_l, amps_r)
+            else:
+                volts = 'UNKN'
+                amps = 'UNKN'
 
-            dump_status(mode, submode, magnitude, angle, int(left_motor),
+            dump_status(self._status_path, mode, submode, magnitude, angle, int(left_motor),
                         int(right_motor), volts, amps, current_speed,
                         current_m1_speed, current_m2_speed, current_max_speed)
             time.sleep(0.1)
