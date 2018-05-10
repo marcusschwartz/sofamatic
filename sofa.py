@@ -193,7 +193,7 @@ class sofa:
                 elif mode == 'SPIN':
                     if magnitude < 10 and current_m1_speed == 0:
                         mode = 'IDLE'
-                        taret_speed = 0.0
+                        target_speed = 0.0
                         target_m1_speed = 0.0
                         current_m1_speed = 0.0
                         target_m2_speed = 0.0
