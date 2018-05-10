@@ -32,7 +32,7 @@ def main():
 
     (options, _) = parser.parse_args()
 
-    atexit.register(lambda _: shutdown(options.status_path))
+    atexit.register(lambda: shutdown(options.status_path))
 
     sofamatic = sofa.Sofa(roboteq_path=options.roboteq_path,
                           status_path=options.status_path,
