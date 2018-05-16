@@ -5,7 +5,7 @@ import atexit
 from optparse import OptionParser
 import os
 
-import sofa
+from sofa import Sofa
 
 
 def shutdown(status_path):
@@ -34,10 +34,10 @@ def main():
 
     atexit.register(lambda: shutdown(options.status_path))
 
-    sofamatic = sofa.Sofa(roboteq_path=options.roboteq_path,
-                          status_path=options.status_path,
-                          listen=options.listen)
-    sofamatic.control_loop()
+    sofa = Sofa(roboteq_path=options.roboteq_path,
+                status_path=options.status_path,
+                listen=options.listen)
+    sofa.run()
 
 
 main()
