@@ -53,10 +53,12 @@ class ComplexMotionController(object):
         status = util.Status()
         status.string = "{:10s} {:8s} {:5.1f}L {:5.1f}R".format(
             self.name(), self.submode(), motor_l, motor_r)
-        status.mode = self.name()
-        status.submode = self.submode()
-        status.motor_l = motor_l
-        status.motor_r = motor_r
+        status.details = {
+            'mode': self.name(),
+            'submode': self.submode(),
+            'motor_l': motor_l,
+            'motor_r': motor_r,
+        }
 
         return status
 

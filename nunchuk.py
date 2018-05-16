@@ -43,9 +43,11 @@ class Joystick(object):
         else:
             string = " XX   XX "
         status = util.Status()
-        status.magnitude = self._magnitude
-        status.angle = self._angle
         status.string = string
+        status.details = {
+            'magnitude': self._magnitude,
+            'angle': self._angle,
+        }
 
         return status
 
