@@ -33,7 +33,7 @@ class Sofa(object):
             self._controller.update_joystick(joystick)
 
             left_motor, right_motor = self._controller.motor_speeds()
-            self._roboteq.speed(left_motor, right_motor)
+            self._roboteq.set_speed(left_motor, right_motor)
 
             self.dump_status(joystick)
 

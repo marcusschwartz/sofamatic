@@ -62,7 +62,7 @@ class Roboteq(object):
 
         return current
 
-    def speed(self, m1_target, m2_target):
+    def set_speed(self, m1_target, m2_target):
         '''set the speed of both motors'''
 
         now = time.time()
