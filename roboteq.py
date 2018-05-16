@@ -51,7 +51,7 @@ class Roboteq(object):
             "amps_l": amps_l,
             "amps_r": amps_r,
         }
-        
+
         return status
 
     def process_accel(self, target, current, delay):
@@ -97,8 +97,8 @@ class Roboteq(object):
         if self._roboteq is None:
             return
 
-        self.roboteq_exec("!G 1 {}".format(-1 * int(m1_target)))
-        self.roboteq_exec("!G 2 {}".format(int(m2_target)))
+        self.roboteq_exec("!G 1 {}".format(-1 * int(self._m1_current)))
+        self.roboteq_exec("!G 2 {}".format(int(self._m1_current)))
 
     def volts(self):
         '''return the current battery voltage'''
