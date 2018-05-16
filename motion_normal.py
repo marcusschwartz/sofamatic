@@ -1,4 +1,4 @@
-"""a sofa"""
+"""a motion controller that behaves sort of like a normal steered vehicle"""
 import math
 
 from motion import MotionController, linear_map, gamma, process_accel

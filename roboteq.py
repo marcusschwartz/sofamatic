@@ -1,5 +1,4 @@
 '''A roboteq RS232 motor controller with accel/deccel enforcement'''
-
 import time
 import serial
 

@@ -1,4 +1,4 @@
-"""get magnitude/angle vectors from a wii nunchuck"""
+"""get magnitude/angle vectors from a remote wii nunchuck"""
 import math
 import socket
 

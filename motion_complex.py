@@ -1,5 +1,4 @@
-"""a sofa"""
-
+"""a meta motion controller that combines several others"""
 from motion_normal import ForwardMC, ReverseMC
 from motion_spin import SpinMC
 from motion_crawl import CrawlMC

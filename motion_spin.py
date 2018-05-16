@@ -1,5 +1,7 @@
-"""spinner"""
-
+"""
+a motion controller to spin in place, where the left and right motors
+move in exactly oposite speeds
+"""
 from motion import MotionController, linear_map, process_accel
 
 

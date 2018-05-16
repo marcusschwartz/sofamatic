@@ -1,4 +1,4 @@
-"""a sofa"""
+"""a simple motion controller and some helper routines"""
 
 PI = 3.14159
 E = 2.7182

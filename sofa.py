@@ -7,11 +7,6 @@ import motion_complex
 
 
 class Sofa(object):
-    '''A skid-steered couch'''
-    _motors = None
-    _nunchuk = None
-    _status_path = None
-
     def __init__(self, roboteq_path, status_path, listen):
         self._status_path = status_path
         (addr, port) = listen.split(':')
@@ -33,8 +28,6 @@ class Sofa(object):
             joystick.angle(), left_motor, right_motor, volts, amps))
 
     def control_loop(self):
-        """the main logic"""
-
         while True:
             joystick = self._nunchuk.get_joystick()
             self._controller.update_joystick(joystick)
