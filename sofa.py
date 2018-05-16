@@ -31,10 +31,11 @@ class Sofa(object):
         if not self._status_path:
             return
         details = util.merge_status_details({
-            "joystick": joystick.status().details,
-            "roboteq": self._roboteq.status().details,
-            "controller": self._controller.status().details,
+            "j": joystick.status().details,
+            "m": self._roboteq.status().details,
+            "c": self._controller.status().details,
         })
+        details["ts"] = int(time.time())
         json.dump(details, open(self._status_path, "w"))
 
     def status_string(self, joystick):
