@@ -23,6 +23,34 @@ JOY_DEADZONE=5
 # JOY_BOTTOM = 0
 # JOY_DEADZONE = 10
 
+class Joystick:
+	_magnitude = 0
+	_angle = 0
+	_button_z = 0
+	_button_c = 0
+
+	def __init__(self, magnitude, angle, button_c, button_z):
+		self._magnitude = magnitude
+		self._angle = angle
+		self._button_c = button_c
+		self._button_z = button_z
+
+	def valid(self):
+		if self._magnitude >= 0:
+			return True
+		return False
+
+	def magnitude(self):
+		return self._magnitude
+
+	def angle(self):
+		return self._angle
+
+	def button_c(self):
+		return self._button_c
+
+	def button_z(self):
+		return self._button_z
 
 class nunchuk:
     """a calibrated magnitude/angle from a wii nunchuk"""
@@ -104,7 +132,7 @@ class nunchuk:
                 got_packet = False
 
         if not data:
-            return -1, -1, False, False
+            return Joystick(-1, -1, False, False)
 
         raw_x_s, raw_y_s, raw_z, raw_c = data.split(':')
         joy_x, joy_y = self.correct_raw_joystick(int(raw_x_s), int(raw_y_s))
@@ -117,4 +145,4 @@ class nunchuk:
 
         magnitude, angle = self.get_joystick_vector(joy_x, joy_y)
 
-        return magnitude, angle, button_c, button_z
+        return Joystick(magnitude, angle, button_c, button_z)
