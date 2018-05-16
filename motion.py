@@ -70,6 +70,9 @@ class MotionController(object):
         self._joystick = new_joystick
         self.process_update()
 
+    def status(self):
+        return self.name()
+
     def active(self):
         return False
 

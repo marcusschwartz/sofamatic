@@ -36,6 +36,12 @@ class Roboteq(object):
         self._accel_table = gen_accel_table(ACCEL_LIMIT)
         self._decel_table = gen_accel_table(ACCEL_LIMIT)
 
+    def status(self):
+        amps_l, amps_r = self.amps()
+        volts = self.volts()
+
+        return "{:4.1f} ({:5.2f})  {:4.1f} {:4.1f}".format(volts, volts / 3, amps_l, amps_r)
+
     def process_accel(self, target, current, delay):
         '''foo'''
 
