@@ -10,13 +10,13 @@ class Sofa(object):
     def __init__(self, roboteq_path, status_path, listen):
         self._status_path = status_path
         (addr, port) = listen.split(':')
-        self._joystick = nunchuk.Nunchuk(addr=addr, port=int(port))
-        self._motors = roboteq.Roboteq(path=roboteq_path)
+        self._nunchuk = nunchuk.Nunchuk(addr=addr, port=int(port))
+        self._roboteq = roboteq.Roboteq(path=roboteq_path)
         self._controller = motion_complex.ComplexMotionController()
 
     def dump_status(self, joystick):
-        volts = self._motors.volts()
-        amps_l, amps_r = self._motors.amps()
+        volts = self._roboteq.volts()
+        amps_l, amps_r = self._roboteq.amps()
 
         volts = "{:4.1f} ({:5.2f})".format(volts, volts / 3)
         amps = "{:4.1f} {:4.1f}".format(amps_l, amps_r)
@@ -29,11 +29,11 @@ class Sofa(object):
 
     def run(self):
         while True:
-            joystick = self._joystick.get_joystick()
+            joystick = self._nunchuk.get_joystick()
             self._controller.update_joystick(joystick)
 
             left_motor, right_motor = self._controller.motor_speeds()
-            self._motors.speed(left_motor, right_motor)
+            self._roboteq.speed(left_motor, right_motor)
 
             self.dump_status(joystick)
 
