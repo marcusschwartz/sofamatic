@@ -25,6 +25,14 @@ class Sofa(object):
         self._roboteq = roboteq.Roboteq(path=roboteq_path)
         self._controller = motion_complex.ComplexMotionController()
 
+    def update_status_file(self, joystick):
+        if self._status_path:
+            status = open(self._status_path, "w")
+            status.write(self._controller.status() + "\n")
+            status.write(joystick.status() + "\n")
+            status.write(self._roboteq.status() + "\n")
+            status.close()
+
     def status(self, joystick):
         return " ".join([self._controller.status(), joystick.status(),
                          self._roboteq.status()])
@@ -37,6 +45,7 @@ class Sofa(object):
             left_motor, right_motor = self._controller.motor_speeds()
             self._roboteq.set_speed(left_motor, right_motor)
 
+            self.update_status_file(joystick)
             print self.status(joystick)
 
             time.sleep(0.1)
