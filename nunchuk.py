@@ -1,18 +1,17 @@
+"""get magnitude/angle vectors from a wii nunchuck"""
 import math
 import socket
-import time
-import joystick
 
 PI = 3.14159
 
 # oem
-JOY_LEFT=30
-JOY_CENTER=135
-JOY_RIGHT=230
-JOY_TOP=231
-JOY_MIDDLE=130
-JOY_BOTTOM=31
-JOY_DEADZONE=5
+JOY_LEFT = 30
+JOY_CENTER = 135
+JOY_RIGHT = 230
+JOY_TOP = 231
+JOY_MIDDLE = 130
+JOY_BOTTOM = 31
+JOY_DEADZONE = 5
 
 # wireless
 # JOY_LEFT = 0
@@ -23,36 +22,38 @@ JOY_DEADZONE=5
 # JOY_BOTTOM = 0
 # JOY_DEADZONE = 10
 
-class Joystick:
-	_magnitude = 0
-	_angle = 0
-	_button_z = 0
-	_button_c = 0
 
-	def __init__(self, magnitude, angle, button_c, button_z):
-		self._magnitude = magnitude
-		self._angle = angle
-		self._button_c = button_c
-		self._button_z = button_z
+class Joystick(object):
+    _magnitude = 0
+    _angle = 0
+    _button_z = 0
+    _button_c = 0
 
-	def valid(self):
-		if self._magnitude >= 0:
-			return True
-		return False
+    def __init__(self, magnitude, angle, button_c, button_z):
+        self._magnitude = magnitude
+        self._angle = angle
+        self._button_c = button_c
+        self._button_z = button_z
 
-	def magnitude(self):
-		return self._magnitude
+    def valid(self):
+        if self._magnitude >= 0:
+            return True
+        return False
 
-	def angle(self):
-		return self._angle
+    def magnitude(self):
+        return self._magnitude
 
-	def button_c(self):
-		return self._button_c
+    def angle(self):
+        return self._angle
 
-	def button_z(self):
-		return self._button_z
+    def button_c(self):
+        return self._button_c
 
-class nunchuk:
+    def button_z(self):
+        return self._button_z
+
+
+class Nunchuk(object):
     """a calibrated magnitude/angle from a wii nunchuk"""
     _sock = None
 
@@ -127,7 +128,7 @@ class nunchuk:
         data = False
         while got_packet:
             try:
-                data, addr = self._sock.recvfrom(1024)
+                data, _ = self._sock.recvfrom(1024)
             except socket.error:
                 got_packet = False
 
