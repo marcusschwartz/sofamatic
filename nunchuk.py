@@ -40,6 +40,11 @@ class Joystick(object):
             return "{:3d}m {:3d}o".format(self._magnitude, self._angle)
         return " XX   XX "
 
+    def centered(self):
+        if self._magnitude <= 10:
+            return True
+        return False
+
     def valid(self):
         if self._magnitude >= 0:
             return True

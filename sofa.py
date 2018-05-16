@@ -1,13 +1,13 @@
 """
 A Sofa has three major components:
   * nunchuk - a wireless joystick that returns a magnitude/angle vector
-  * roboteq - a motor speed controller that takes left/right motor speeds 
+  * roboteq - a motor speed controller that takes left/right motor speeds
               as inputs
   * controller - a motion controller that translates the joystick vector
                  into left/right motor speeds
 
   It just runs in a loop, taking vectors from the joystick, translating them
-  into motor speeds via the controller, and then passes the motor speeds to 
+  into motor speeds via the controller, and then passes the motor speeds to
   the roboteq.
 """
 import time

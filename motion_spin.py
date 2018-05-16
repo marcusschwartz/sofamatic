@@ -14,12 +14,8 @@ class SpinMC(MotionController):
     _turn_speed = 0
 
     def active(self):
-        if self._joystick.magnitude() > 10:
-            return True
-
         if self._turn_speed > 0:
             return True
-
         return False
 
     def submode(self):

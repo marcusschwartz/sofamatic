@@ -4,68 +4,72 @@ from motion_spin import SpinMC
 from motion_crawl import CrawlMC
 
 
+def controller_selector(joystick):
+    """
+    determine which real motion controller to use based on
+    the initial joystick position
+    """
+    angle = joystick.angle()
+    controller_class = None
+
+    if joystick.button_c():
+        if angle <= 45 or angle >= 315:
+            controller_class = SpinMC
+        elif angle > 45 and angle < 135:
+            controller_class = CrawlMC
+        elif angle >= 135 and angle <= 225:
+            controller_class = SpinMC
+        elif angle > 225 and angle < 315:
+            controller_class = CrawlMC
+    elif (angle <= 45) or (angle >= 315):
+        controller_class = ForwardMC
+    elif (angle >= 135) and (angle <= 225):
+        controller_class = ReverseMC
+
+    if controller_class:
+        return controller_class()
+
+    return None
+
+
 class ComplexMotionController(object):
     _controller = None
-    _online = True
-    _missed_data = 3
+    _online = False
+    _missed_data = 0
 
     def name(self):
-        if self._controller:
-            return self._controller.name()
-
         if not self._online:
             return 'OFFLINE'
+
+        if self._controller:
+            return self._controller.name()
 
         return 'IDLE'
 
     def status(self):
         motor_l, motor_r = self.motor_speeds()
-        return "{:10s} {:8s} {:5.1f}L {:5.1f}R".format(self.name(), self.submode(), motor_l, motor_r)
+        return "{:10s} {:8s} {:5.1f}L {:5.1f}R".format(
+            self.name(), self.submode(), motor_l, motor_r)
 
     def submode(self):
         if self._controller:
             return self._controller.submode()
         return ""
 
-    def controller_selector(self, joystick):
-        if joystick.magnitude() < 10:
-            return None
-
-        angle = joystick.angle()
-        controller_class = None
-
-        if joystick.button_c():
-            if angle <= 45 or angle >= 315:
-                controller_class = SpinMC
-            elif angle > 45 and angle < 135:
-                controller_class = CrawlMC
-            elif angle >= 135 and angle <= 225:
-                controller_class = SpinMC
-            elif angle > 225 and angle < 315:
-                controller_class = CrawlMC
-        elif (angle <= 45) or (angle >= 315):
-            controller_class = ForwardMC
-        elif (angle >= 135) and (angle <= 225):
-            controller_class = ReverseMC
-
-        if controller_class:
-            return controller_class()
-
-        return None
-
     def update_joystick(self, joystick):
         if joystick.valid():
             self._missed_data = 0
 
-            if not self._online:
-                # only return online when the joystick is idle
-                if joystick.magnitude() < 10:
-                    self._online = True
+            # only return online when the joystick is idle
+            if not self._online and joystick.centered():
+                self._online = True
 
             # if a controller isn't running, see if one should be:
-            if self._online and not self._controller:
-                self._controller = self.controller_selector(joystick)
+            if self._online and not self._controller \
+               and not joystick.centered():
+                self._controller = controller_selector(joystick)
         else:
+            # we don't have a valid joystick, prepare to go offline
             self._missed_data += 1
             if self._missed_data > 3:
                 self._online = False

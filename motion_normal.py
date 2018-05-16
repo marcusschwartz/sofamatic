@@ -39,9 +39,6 @@ class NormalMC(MotionController):
         return self._submode
 
     def active(self):
-        if self._joystick.magnitude() > 10:
-            return True
-
         if self._speed > 0 and (self._l_speed != 0 or self._r_speed != 0):
             return True
 
@@ -81,7 +78,7 @@ class NormalMC(MotionController):
         end_m2_speed = 0
         accel_profile = None
 
-        if self._joystick.magnitude() <= 10:
+        if self._joystick.centered():
             return "COAST", 0.0, 0.0, "NORMAL"
 
         for i in range(0, len(JOY_MODES) - 1):
