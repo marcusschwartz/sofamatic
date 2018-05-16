@@ -5,6 +5,9 @@ move in exactly oposite speeds
 from motion import MotionController, linear_map, process_accel
 
 
+JOY_DEADZONE = 10
+
+
 class SpinMC(MotionController):
     _name = "SPIN"
     _direction = "NONE"
@@ -28,21 +31,24 @@ class SpinMC(MotionController):
 
         angle = self._joystick.angle()
 
-        if angle in set([0, 180, 360]):
+        if angle < JOY_DEADZONE or angle > 360 - JOY_DEADZONE:
+            direction = 'NONE'
+            turn_speed = 0
+        elif angle > 180 - JOY_DEADZONE and angle < 180 + JOY_DEADZONE:
             direction = 'NONE'
             turn_speed = 0
         elif angle <= 90:
             direction = 'RIGHT'
-            turn_speed = linear_map(angle, 0, 90, 0.0, 1.0)
-        elif angle < 180:
+            turn_speed = linear_map(angle, JOY_DEADZONE, 90, 0.0, 1.0)
+        elif angle <= 180 - JOY_DEADZONE:
             direction = 'RIGHT'
-            turn_speed = linear_map(angle, 90, 180, 1.0, 0.0)
+            turn_speed = linear_map(angle, 90, 180 - JOY_DEADZONE, 1.0, 0.0)
         elif angle <= 270:
             direction = 'LEFT'
-            turn_speed = linear_map(angle, 180, 270, 0.0, 1.0)
+            turn_speed = linear_map(angle, 180 + JOY_DEADZONE, 270, 0.0, 1.0)
         else:
             direction = 'LEFT'
-            turn_speed = linear_map(angle, 270, 360, 1.0, 0.0)
+            turn_speed = linear_map(angle, 270, 360 - JOY_DEADZONE, 1.0, 0.0)
 
         self._direction = direction
         self._turn_speed = process_accel(turn_speed, self._turn_speed, 'SPIN')
