@@ -40,7 +40,8 @@ class Roboteq(object):
         amps_l, amps_r = self.amps()
         volts = self.volts()
 
-        return "{:4.1f}v ({:5.2f}v)  {:4.1f}a {:4.1f}a {:4d}l {:4d}r".format(volts, volts / 3, amps_l, amps_r, self._m1_current, self._m2_current)
+        return "{:4.1f}v ({:5.2f}v)  {:4.1f}a {:4.1f}a {:4d}l {:4d}r".format(
+            volts, volts / 3, amps_l, amps_r, self._m1_current, self._m2_current)
 
     def process_accel(self, target, current, delay):
         '''foo'''
@@ -58,11 +59,15 @@ class Roboteq(object):
             if limit < change:
                 print "LIMIT ACCEL {} -> {}".format(change, limit)
                 change = limit
+            if target < current:
+                change *= -1
         elif change < 0:
             limit = int(self._decel_table[abs(int(current))] * delay)
             if limit < abs(change):
                 print "LIMIT DECEL {} -> {}".format(abs(change), limit)
                 change = -1 * limit
+            if target > current:
+                change *= -1
 
         current += change
 
