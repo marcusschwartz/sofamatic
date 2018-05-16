@@ -6,13 +6,14 @@ from motion_crawl import CrawlMC
 
 class ComplexMotionController(object):
     _controller = None
+    _online = True
     _missed_data = 3
 
     def name(self):
         if self._controller:
             return self._controller.name()
 
-        if self._missed_data >= 3:
+        if not self._online:
             return 'OFFLINE'
 
         return 'IDLE'
@@ -56,12 +57,18 @@ class ComplexMotionController(object):
         if joystick.valid():
             self._missed_data = 0
 
+            if not self._online:
+                # only return online when the joystick is idle
+                if joystick.magnitude() < 10:
+                    self._online = True
+
             # if a controller isn't running, see if one should be:
-            if not self._controller:
+            if self._online and not self._controller:
                 self._controller = self.controller_selector(joystick)
         else:
             self._missed_data += 1
             if self._missed_data > 3:
+                self._online = False
                 self._controller = None
 
         if self._controller:

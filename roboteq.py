@@ -57,14 +57,14 @@ class Roboteq(object):
         if change > 0:
             limit = int(self._accel_table[abs(int(current))] * delay)
             if limit < change:
-                print "LIMIT ACCEL {} -> {}".format(change, limit)
+#                print "LIMIT ACCEL {} -> {}".format(change, limit)
                 change = limit
             if target < current:
                 change *= -1
         elif change < 0:
             limit = int(self._decel_table[abs(int(current))] * delay)
             if limit < abs(change):
-                print "LIMIT DECEL {} -> {}".format(abs(change), limit)
+#                print "LIMIT DECEL {} -> {}".format(abs(change), limit)
                 change = -1 * limit
             if target > current:
                 change *= -1
