@@ -28,14 +28,15 @@ class Sofa(object):
     def update_status_file(self, joystick):
         if self._status_path:
             status = open(self._status_path, "w")
-            status.write(self._controller.status() + "\n")
-            status.write(joystick.status() + "\n")
-            status.write(self._roboteq.status() + "\n")
+            status.write(self._controller.status().string + "\n")
+            status.write(joystick.status().string + "\n")
+            status.write(self._roboteq.status().string + "\n")
             status.close()
 
     def status(self, joystick):
-        return " ".join([self._controller.status(), joystick.status(),
-                         self._roboteq.status()])
+        return " ".join([self._controller.status().string,
+                         joystick.status().string,
+                         self._roboteq.status().string])
 
     def run(self):
         while True:

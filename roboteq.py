@@ -2,6 +2,8 @@
 import time
 import serial
 
+import util
+
 ACCEL_LIMIT = [
     [0, 99, 200],
     [100, 1000, 400],
@@ -40,8 +42,15 @@ class Roboteq(object):
         amps_l, amps_r = self.amps()
         volts = self.volts()
 
-        return "{:4.1f}v ({:5.2f}v)  {:4.1f}a {:4.1f}a {:4d}l {:4d}r".format(
+        status = util.Status()
+        status.string = "{:4.1f}v ({:5.2f}v)  {:4.1f}a {:4.1f}a {:4d}l {:4d}r".format(
             volts, volts / 3, amps_l, amps_r, self._m1_current, self._m2_current)
+        status.volts = volts
+        status.volts_12 = volts / 3
+        status.amps_l = amps_l
+        status.amps_r = amps_r
+        
+        return status
 
     def process_accel(self, target, current, delay):
         '''foo'''

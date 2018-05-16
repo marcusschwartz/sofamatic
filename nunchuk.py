@@ -2,6 +2,8 @@
 import math
 import socket
 
+import util
+
 PI = 3.14159
 
 # oem
@@ -37,8 +39,15 @@ class Joystick(object):
 
     def status(self):
         if self._magnitude >= 0:
-            return "{:3d}m {:3d}o".format(self._magnitude, self._angle)
-        return " XX   XX "
+            string = "{:3d}m {:3d}o".format(self._magnitude, self._angle)
+        else:
+            string = " XX   XX "
+        status = util.Status()
+        status.magnitude = self._magnitude
+        status.angle = self._angle
+        status.string = string
+
+        return status
 
     def centered(self):
         if self._magnitude <= 10:

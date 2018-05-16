@@ -3,6 +3,8 @@ from motion_normal import ForwardMC, ReverseMC
 from motion_spin import SpinMC
 from motion_crawl import CrawlMC
 
+import util
+
 
 def controller_selector(joystick):
     """
@@ -48,8 +50,15 @@ class ComplexMotionController(object):
 
     def status(self):
         motor_l, motor_r = self.motor_speeds()
-        return "{:10s} {:8s} {:5.1f}L {:5.1f}R".format(
+        status = util.Status()
+        status.string = "{:10s} {:8s} {:5.1f}L {:5.1f}R".format(
             self.name(), self.submode(), motor_l, motor_r)
+        status.mode = self.name()
+        status.submode = self.submode()
+        status.motor_l = motor_l
+        status.motor_r = motor_r
+
+        return status
 
     def submode(self):
         if self._controller:
