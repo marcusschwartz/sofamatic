@@ -36,7 +36,7 @@ class Joystick(object):
         self._button_z = button_z
 
     def status(self):
-        return "{:3d} {:3d}".format(self._magnitude, self._angle)
+        return "{:3d}m {:3d}o".format(self._magnitude, self._angle)
 
     def valid(self):
         if self._magnitude >= 0:

@@ -40,7 +40,7 @@ class Roboteq(object):
         amps_l, amps_r = self.amps()
         volts = self.volts()
 
-        return "{:4.1f} ({:5.2f})  {:4.1f} {:4.1f}".format(volts, volts / 3, amps_l, amps_r)
+        return "{:4.1f}v ({:5.2f}v)  {:4.1f}a {:4.1f}a {:4d}l {:4d}r".format(volts, volts / 3, amps_l, amps_r, self._m1_current, self._m2_current)
 
     def process_accel(self, target, current, delay):
         '''foo'''
@@ -79,8 +79,8 @@ class Roboteq(object):
         self._m2_current = self.process_accel(m2_target, self._m2_current, delay)
 
         if self._roboteq is None:
-            print "SPEED {} {}".format(int(self._m1_current), int(self._m2_current))
             return
+
         self.roboteq_exec("!G 1 {}".format(-1 * int(m1_target)))
         self.roboteq_exec("!G 2 {}".format(int(m2_target)))
 

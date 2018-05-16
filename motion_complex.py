@@ -18,8 +18,8 @@ class ComplexMotionController(object):
         return 'IDLE'
 
     def status(self):
-        l, r = self.motor_speeds()
-        return "{:10s} {:5.1f} {:5.1f}".format(self.name(), l, r)
+        motor_l, motor_r = self.motor_speeds()
+        return "{:10s} {:8s} {:5.1f}L {:5.1f}R".format(self.name(), self.submode(), motor_l, motor_r)
 
     def submode(self):
         if self._controller:
