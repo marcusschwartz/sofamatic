@@ -153,6 +153,8 @@ class Nunchuk(object):
     def get_joystick(self, timeout):
         """get a joystick value"""
         data = None
+	if timeout < 0:
+	    timeout = 0
         if select.select([self._sock], [], [], timeout):
             while True:
                 try:
