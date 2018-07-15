@@ -11,6 +11,7 @@
   roboteq.
 """
 import json
+import socket
 import time
 
 import motion_complex
@@ -26,6 +27,7 @@ class Sofa(object):
         self._nunchuk = nunchuk.Nunchuk(addr=addr, port=int(port))
         self._roboteq = roboteq.Roboteq(path=roboteq_path)
         self._controller = motion_complex.ComplexMotionController()
+	self._udp_status_delay = 0
 
     def update_status_file(self, joystick):
         if not self._status_path:
@@ -43,8 +45,21 @@ class Sofa(object):
                          joystick.status().string,
                          self._roboteq.status().string])
 
+    def send_status_packet(self, joystick):
+        self._udp_status_delay -= 1
+        if not joystick.addr() or self._udp_status_delay > 0:
+	    return
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
+	clock = time.strftime("%I:%M:%S%p").lstrip("0")
+	voltage = " %4.1fv" % self._roboteq.status().details["volts_12"]
+	packet = " ".join((clock, voltage))
+        sock.sendto(packet, joystick.addr())
+	self._udp_status_delay = 10
+
     def run(self):
+        _ts = time.time()
         while True:
+	    start = time.time()
             joystick = self._nunchuk.get_joystick()
             self._controller.update_joystick(joystick)
 
@@ -52,6 +67,13 @@ class Sofa(object):
             self._roboteq.set_speed(left_motor, right_motor)
 
             self.update_status_file(joystick)
+	    self.send_status_packet(joystick)
             print self.status_string(joystick)
+	    end = time.time()
+	    cycle_time = end - _ts
+            _ts = end
 
-            time.sleep(0.1)
+	    loop_time = end - start
+	    if loop_time < 0.1:
+	      delay = 0.1 - loop_time
+              time.sleep(0.1 - delay)
