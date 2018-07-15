@@ -7,7 +7,7 @@ class CrawlMC(MotionController):
     _name = "CRAWL"
 
     def submode(self):
-    	return "NONE"
+        return "NONE"
 
     def motor_speeds(self):
         return 0.0, 0.0

@@ -38,12 +38,13 @@ class Joystick(object):
         self._angle = angle
         self._button_c = button_c
         self._button_z = button_z
-	self._delay = delay
-	self._addr = addr
+        self._delay = delay
+        self._addr = addr
 
     def status(self):
         if self._magnitude >= 0:
-            string = "{:3d}m {:3d}o [{:4d}]".format(self._magnitude, self._angle, int(self._delay * 1000))
+            string = "{:3d}m {:3d}o [{:4d}]".format(
+                self._magnitude, self._angle, int(self._delay * 1000))
         else:
             string = " XX   XX        "
         status = util.Status()
@@ -51,7 +52,7 @@ class Joystick(object):
         status.details = {
             'magnitude': self._magnitude,
             'angle': self._angle,
-	    'delay': int(self._delay * 1000),
+            'delay': int(self._delay * 1000),
         }
 
         return status
@@ -93,7 +94,7 @@ class Nunchuk(object):
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._sock.bind((addr, port))
         self._sock.setblocking(0)
-	self._ts = time.time()
+        self._ts = time.time()
 
     def correct_raw_joystick(self, raw_x, raw_y):
         """turn an i2c joystick x/y value into a -100:100 x/y value"""
@@ -168,9 +169,9 @@ class Nunchuk(object):
         if not data:
             return Joystick(-1, -1, False, False, 0, None)
 
-	now = time.time()
-	delay = now - self._ts
-	self._ts = now
+        now = time.time()
+        delay = now - self._ts
+        self._ts = now
 
         raw_x_s, raw_y_s, raw_z, raw_c = data.split(':')
         joy_x, joy_y = self.correct_raw_joystick(int(raw_x_s), int(raw_y_s))

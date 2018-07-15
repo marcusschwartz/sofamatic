@@ -5,8 +5,10 @@ import atexit
 
 from OmegaExpansion import oledExp
 
+
 def shutdown():
     oledExp.clear()
+
 
 empty = list()
 for line in range(0, 8):
@@ -17,6 +19,7 @@ def init():
     oledExp.driverInit()
     oledExp.clear()
     oledExp.setTextColumns()
+
 
 atexit.register(shutdown)
 
@@ -51,14 +54,13 @@ while True:
         time.sleep(0.05)
         count += 1
         if count > 1200:
-	    # re-init every 60 seconds because sometimes
-	    # the display gets wonky
+            # re-init every 60 seconds because sometimes
+            # the display gets wonky
             init()
-	    current=list(empty)
+            current = list(empty)
             count = 0
     except BaseException as e:
         print("Exception %s" % e)
         init()
-        current=list(empty)
+        current = list(empty)
         time.sleep(0.05)
-
