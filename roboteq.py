@@ -41,16 +41,22 @@ class Roboteq(object):
     def status(self):
         amps_l, amps_r = self.amps()
         volts = self.volts()
+        brake_active = self.brake_active()
+        if brake_active:
+            brake = 'BRAKE'
+        else:
+            brake = ''
 
         status = util.Status()
-        status_fmt = "{:4.1f}v ({:5.2f}v)  {:4.1f}a {:4.1f}a {:4d}l {:4d}r"
-        status.string = status_fmt.format(volts, volts / 3, amps_l, amps_r,
+        status_fmt = "{:5s} {:4.1f}v ({:5.2f}v)  {:4.1f}a {:4.1f}a {:4d}l {:4d}r"
+        status.string = status_fmt.format(brake, volts, volts / 3, amps_l, amps_r,
                                           self._m1_current, self._m2_current)
         status.details = {
             "volts": volts,
             "volts_12": volts / 3,
             "amps_l": amps_l,
             "amps_r": amps_r,
+            "brake": brake_active,
         }
 
         return status
@@ -121,6 +127,13 @@ class Roboteq(object):
         m1_amps = float(amps.split(':')[1]) / 10
         m2_amps = float(amps.split(':')[0]) / 10
         return m1_amps, m2_amps
+
+    def brake_active(self):
+        '''return true if the emergency brake is active.'''
+        if self._roboteq is None:
+            return False
+        brake = int(self.roboteq_exec("?DI 6")[3:])
+        return brake == 1
 
     def roboteq_exec(self, cmd):
         '''run a single serial command against the controller'''
