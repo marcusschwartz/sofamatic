@@ -29,23 +29,25 @@ class Sofa(object):
         self._controller = motion_complex.ComplexMotionController()
         self._udp_status_delay = 0
 
-    def update_status_file(self, joystick):
+    def update_status_file(self, joystick, status):
         if not self._status_path:
             return
         details = util.merge_status_details({
             "j": joystick.status().details,
             "m": self._roboteq.status().details,
             "c": self._controller.status().details,
+	    "l": status,
         })
         details["ts"] = int(time.time())
         json.dump(details, open(self._status_path, "w"))
 
-    def status_string(self, joystick):
+    def status_string(self, joystick, status_string):
         return " ".join([self._controller.status().string,
                          joystick.status().string,
-                         self._roboteq.status().string])
+                         self._roboteq.status().string,
+			 status_string])
 
-    def send_status_packet(self, joystick):
+    def send_status_packet(self, joystick, status):
         self._udp_status_delay -= 1
         if not joystick.addr() or self._udp_status_delay > 0:
             return
@@ -57,20 +59,31 @@ class Sofa(object):
         self._udp_status_delay = 10
 
     def run(self):
+        last_rcv = time.time()
+	timeout = 0
+	INTERVAL = 0.1 # seconds
+	GRACE = 0.2 # percent of INTERVAL, 0.0-1.0
         while True:
-            start = time.time()
-            joystick = self._nunchuk.get_joystick()
+            now = time.time()
+	    cycle_time = now - last_rcv
+            timeout = (INTERVAL + (INTERVAL * GRACE)) - cycle_time
+            joystick = self._nunchuk.get_joystick(timeout)
+	    now = time.time()
+	    packet_interval = int(1000 * (now - last_rcv))
+	    last_rcv = now
+
+	    stats = {
+	        "loop_util": cycle_time / INTERVAL,
+		"interval": packet_interval,
+	    }
+
+	    status_string = "%3d%% %4dms" % (100 * cycle_time / INTERVAL, packet_interval)
+
             self._controller.update_joystick(joystick)
 
             left_motor, right_motor = self._controller.motor_speeds()
             self._roboteq.set_speed(left_motor, right_motor)
 
-            self.update_status_file(joystick)
-            self.send_status_packet(joystick)
-            print self.status_string(joystick)
-            end = time.time()
-
-            loop_time = end - start
-            if loop_time < 0.1:
-                delay = 0.1 - loop_time
-                time.sleep(0.1 - delay)
+            self.update_status_file(joystick, stats)
+            self.send_status_packet(joystick, stats)
+            print self.status_string(joystick, status_string)
