@@ -34,7 +34,6 @@ def process_accel(target_speed, current_speed, accel_profile):
     if target_speed > current_speed:
         # accelerate
         accel_rate = ACCEL_PROFILES[accel_profile][0]
-        # print "ACCEL {} {} {}".format(accel_profile, current_speed, accel_rate)
         current_speed += accel_rate
         if current_speed > target_speed:
             current_speed = target_speed
@@ -42,7 +41,6 @@ def process_accel(target_speed, current_speed, accel_profile):
     elif target_speed < current_speed:
         # deccelerate
         decel_rate = ACCEL_PROFILES[accel_profile][1]
-        # print "DECEL {} {} {}".format(accel_profile, current_speed, decel_rate)
         current_speed -= decel_rate
         if current_speed < target_speed:
             current_speed = target_speed

@@ -43,8 +43,9 @@ class Roboteq(object):
         volts = self.volts()
 
         status = util.Status()
-        status.string = "{:4.1f}v ({:5.2f}v)  {:4.1f}a {:4.1f}a {:4d}l {:4d}r".format(
-            volts, volts / 3, amps_l, amps_r, self._m1_current, self._m2_current)
+        status_fmt = "{:4.1f}v ({:5.2f}v)  {:4.1f}a {:4.1f}a {:4d}l {:4d}r"
+        status.string = status_fmt.format(volts, volts / 3, amps_l, amps_r,
+                                          self._m1_current, self._m2_current)
         status.details = {
             "volts": volts,
             "volts_12": volts / 3,
@@ -91,8 +92,12 @@ class Roboteq(object):
         delay = now - self._last_speed_ts
         self._last_speed_ts = now
 
-        self._m1_current = self.process_accel(m1_target, self._m1_current, delay)
-        self._m2_current = self.process_accel(m2_target, self._m2_current, delay)
+        self._m1_current = self.process_accel(m1_target,
+                                              self._m1_current,
+                                              delay)
+        self._m2_current = self.process_accel(m2_target,
+                                              self._m2_current,
+                                              delay)
 
         if self._roboteq is None:
             return

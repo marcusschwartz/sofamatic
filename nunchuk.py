@@ -2,7 +2,6 @@
 import math
 import select
 import socket
-import time
 
 import util
 
@@ -153,16 +152,16 @@ class Nunchuk(object):
 
     def get_joystick(self, timeout):
         """get a joystick value"""
-	data = None
-	if select.select([self._sock], [], [], timeout):
-	    while True:
-	        try:
-	            data, addr = self._sock.recvfrom(1024)
-	        except socket.error:
-	            break
-	if not data:
+        data = None
+        if select.select([self._sock], [], [], timeout):
+            while True:
+                try:
+                    data, addr = self._sock.recvfrom(1024)
+                except socket.error:
+                    break
+        if not data:
             return Joystick(-1, -1, False, False, None)
-	
+
         raw_x_s, raw_y_s, raw_z, raw_c = data.split(':')
         joy_x, joy_y = self.correct_raw_joystick(int(raw_x_s), int(raw_y_s))
         button_z = False

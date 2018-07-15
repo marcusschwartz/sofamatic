@@ -91,8 +91,10 @@ class NormalMC(MotionController):
                 del next_accel_profile
                 break
 
-        m1_speed = linear_map(turn_angle, start_angle, end_angle, start_m1_speed, end_m1_speed)
-        m2_speed = linear_map(turn_angle, start_angle, end_angle, start_m2_speed, end_m2_speed)
+        m1_speed = linear_map(turn_angle, start_angle, end_angle,
+                              start_m1_speed, end_m1_speed)
+        m2_speed = linear_map(turn_angle, start_angle, end_angle,
+                              start_m2_speed, end_m2_speed)
 
         return submode, m1_speed, m2_speed, accel_profile
 

@@ -36,7 +36,7 @@ class Sofa(object):
             "j": joystick.status().details,
             "m": self._roboteq.status().details,
             "c": self._controller.status().details,
-	    "l": status,
+            "l": status,
         })
         details["ts"] = int(time.time())
         json.dump(details, open(self._status_path, "w"))
@@ -45,7 +45,7 @@ class Sofa(object):
         return " ".join([self._controller.status().string,
                          joystick.status().string,
                          self._roboteq.status().string,
-			 status_string])
+                         status_string])
 
     def send_status_packet(self, joystick, status):
         self._udp_status_delay -= 1
@@ -60,24 +60,25 @@ class Sofa(object):
 
     def run(self):
         last_rcv = time.time()
-	timeout = 0
-	INTERVAL = 0.1 # seconds
-	GRACE = 0.2 # percent of INTERVAL, 0.0-1.0
+        timeout = 0
+        INTERVAL = 0.1  # seconds
+        GRACE = 0.2  # percent of INTERVAL, 0.0-1.0
         while True:
             now = time.time()
-	    cycle_time = now - last_rcv
+            cycle_time = now - last_rcv
             timeout = (INTERVAL + (INTERVAL * GRACE)) - cycle_time
             joystick = self._nunchuk.get_joystick(timeout)
-	    now = time.time()
-	    packet_interval = int(1000 * (now - last_rcv))
-	    last_rcv = now
+            now = time.time()
+            packet_interval = int(1000 * (now - last_rcv))
+            last_rcv = now
 
-	    stats = {
-	        "loop_util": cycle_time / INTERVAL,
-		"interval": packet_interval,
-	    }
+            stats = {
+                "loop_util": cycle_time / INTERVAL,
+                "interval": packet_interval,
+            }
 
-	    status_string = "%3d%% %4dms" % (100 * cycle_time / INTERVAL, packet_interval)
+            status_string = "%3d%% %4dms" % (100 * cycle_time / INTERVAL,
+                                             packet_interval)
 
             self._controller.update_joystick(joystick)
 
