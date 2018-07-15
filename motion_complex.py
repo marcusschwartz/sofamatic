@@ -51,7 +51,7 @@ class ComplexMotionController(object):
     def status(self):
         motor_l, motor_r = self.motor_speeds()
         status = util.Status()
-        status.string = "{:10s} {:8s} {:5.1f}L {:5.1f}R".format(
+        status.string = "{:10s} {:8s} {:6.1f}L {:6.1f}R".format(
             self.name(), self.submode(), motor_l, motor_r)
         status.details = {
             'mode': self.name(),
