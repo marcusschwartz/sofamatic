@@ -1,6 +1,7 @@
 """get magnitude/angle vectors from a remote wii nunchuck"""
 import math
 import socket
+import time
 
 import util
 
@@ -32,23 +33,25 @@ class Joystick(object):
     _button_c = 0
     _addr = ''
 
-    def __init__(self, magnitude, angle, button_c, button_z, addr):
+    def __init__(self, magnitude, angle, button_c, button_z, delay, addr):
         self._magnitude = magnitude
         self._angle = angle
         self._button_c = button_c
         self._button_z = button_z
+	self._delay = delay
 	self._addr = addr
 
     def status(self):
         if self._magnitude >= 0:
-            string = "{:3d}m {:3d}o".format(self._magnitude, self._angle)
+            string = "{:3d}m {:3d}o [{:4d}]".format(self._magnitude, self._angle, int(self._delay * 1000))
         else:
-            string = " XX   XX "
+            string = " XX   XX        "
         status = util.Status()
         status.string = string
         status.details = {
             'magnitude': self._magnitude,
             'angle': self._angle,
+	    'delay': int(self._delay * 1000),
         }
 
         return status
@@ -75,6 +78,9 @@ class Joystick(object):
     def button_z(self):
         return self._button_z
 
+    def delay(self):
+        return self._delay
+
     def addr(self):
         return self._addr
 
@@ -87,6 +93,7 @@ class Nunchuk(object):
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._sock.bind((addr, port))
         self._sock.setblocking(0)
+	self._ts = time.time()
 
     def correct_raw_joystick(self, raw_x, raw_y):
         """turn an i2c joystick x/y value into a -100:100 x/y value"""
@@ -159,7 +166,11 @@ class Nunchuk(object):
                 got_packet = False
 
         if not data:
-            return Joystick(-1, -1, False, False, None)
+            return Joystick(-1, -1, False, False, 0, None)
+
+	now = time.time()
+	delay = now - self._ts
+	self._ts = now
 
         raw_x_s, raw_y_s, raw_z, raw_c = data.split(':')
         joy_x, joy_y = self.correct_raw_joystick(int(raw_x_s), int(raw_y_s))
@@ -172,4 +183,4 @@ class Nunchuk(object):
 
         magnitude, angle = self.get_joystick_vector(joy_x, joy_y)
 
-        return Joystick(magnitude, angle, button_c, button_z, addr)
+        return Joystick(magnitude, angle, button_c, button_z, delay, addr)
