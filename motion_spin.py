@@ -6,6 +6,7 @@ from motion import MotionController, linear_map, process_accel
 
 
 JOY_DEADZONE = 10
+MAX_SPEED = 150.0
 
 
 class SpinMC(MotionController):
@@ -54,8 +55,8 @@ class SpinMC(MotionController):
 
         # XXX doesn't switch directions with accel properly
         if self._direction == 'LEFT':
-            return turn_speed * -1.0, turn_speed
+            return turn_speed * -1.0 * MAX_SPEED, turn_speed * MAX_SPEED
         if self._direction == 'RIGHT':
-            return turn_speed, turn_speed * -1.0
+            return turn_speed * MAX_SPEED, turn_speed * -1.0 * MAX_SPEED
 
         return 0, 0
