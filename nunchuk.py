@@ -30,12 +30,14 @@ class Joystick(object):
     _angle = 0
     _button_z = 0
     _button_c = 0
+    _addr = ''
 
-    def __init__(self, magnitude, angle, button_c, button_z):
+    def __init__(self, magnitude, angle, button_c, button_z, addr):
         self._magnitude = magnitude
         self._angle = angle
         self._button_c = button_c
         self._button_z = button_z
+	self._addr = addr
 
     def status(self):
         if self._magnitude >= 0:
@@ -72,6 +74,9 @@ class Joystick(object):
 
     def button_z(self):
         return self._button_z
+
+    def addr(self):
+        return self._addr
 
 
 class Nunchuk(object):
@@ -149,12 +154,12 @@ class Nunchuk(object):
         data = False
         while got_packet:
             try:
-                data, _ = self._sock.recvfrom(1024)
+                data, addr = self._sock.recvfrom(1024)
             except socket.error:
                 got_packet = False
 
         if not data:
-            return Joystick(-1, -1, False, False)
+            return Joystick(-1, -1, False, False, None)
 
         raw_x_s, raw_y_s, raw_z, raw_c = data.split(':')
         joy_x, joy_y = self.correct_raw_joystick(int(raw_x_s), int(raw_y_s))
@@ -167,4 +172,4 @@ class Nunchuk(object):
 
         magnitude, angle = self.get_joystick_vector(joy_x, joy_y)
 
-        return Joystick(magnitude, angle, button_c, button_z)
+        return Joystick(magnitude, angle, button_c, button_z, addr)
