@@ -98,7 +98,7 @@ class Roboteq(object):
             return
 
         self.roboteq_exec("!G 1 {}".format(-1 * int(self._m1_current)))
-        self.roboteq_exec("!G 2 {}".format(int(self._m1_current)))
+        self.roboteq_exec("!G 2 {}".format(int(self._m2_current)))
 
     def volts(self):
         '''return the current battery voltage'''
