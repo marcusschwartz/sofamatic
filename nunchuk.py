@@ -56,6 +56,8 @@ class Joystick(object):
         return status
 
     def centered(self):
+        if not self.valid():
+	    return False
         if self._magnitude <= 10:
             return True
         return False

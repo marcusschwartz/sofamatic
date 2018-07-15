@@ -90,7 +90,7 @@ class ComplexMotionController(object):
             self._controller.update_joystick(joystick)
 
             # if the existing controller is idle, kill it
-            if not self._controller.active():
+            if not self._controller.active() and joystick.centered():
                 self._controller = None
 
     def motor_speeds(self):
