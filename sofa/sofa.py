@@ -65,7 +65,7 @@ class Sofa(object):
         brake = roboteq_status.details["brake"]
         pl = "%3d%%" % (100 - status["packet_loss"])
         packet = " ".join((energy, voltage, pl))
-        if False and brake:
+        if brake:
             packet += "~**PARKING BRAKE**"
         elif controller_status.details["mode"] != "IDLE":
             watts = roboteq_status.details["watts"]
