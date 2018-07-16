@@ -71,6 +71,8 @@ class MotionController(object):
         return self.name()
 
     def active(self):
+        if not self._joystick.valid():
+	    return False
         return not self._joystick.centered()
 
     def motor_speeds(self):

@@ -78,7 +78,7 @@ class NormalMC(MotionController):
         end_m2_speed = 0
         accel_profile = None
 
-        if self._joystick.centered():
+        if self._joystick.centered() or not self._joystick.valid():
             return "COAST", 0.0, 0.0, "NORMAL"
 
         for i in range(0, len(JOY_MODES) - 1):
