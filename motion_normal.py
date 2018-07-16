@@ -17,8 +17,8 @@ JOY_MODES = [
 MAX_FWD_SPEED = 0.55
 MAX_TURN_FWD_SPEED = 0.60
 
-TURBO_MAX_FWD_SPEED = 0.9
-TURBO_MAX_TURN_FWD_SPEED = 0.9
+TURBO_MAX_FWD_SPEED = 1.0
+TURBO_MAX_TURN_FWD_SPEED = 1.0
 
 MAX_REV_SPEED = 0.2
 MAX_TURN_REV_SPEED = 0.2
@@ -145,7 +145,7 @@ class NormalMC(MotionController):
         left_motor = math.sqrt(self._l_speed * self._speed) * self._max_speed
         right_motor = math.sqrt(self._r_speed * self._speed) * self._max_speed
 
-# left_motor *= 0.96
+        left_motor *= 0.95
 
         if self._name == 'REVERSE':
             left_motor *= -1.0
