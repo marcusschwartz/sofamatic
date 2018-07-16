@@ -96,7 +96,7 @@ class Sofa(object):
 
     def _add_packet_history(self, joystick):
         duty_cycle = int(100 * self._cycle_time / self.INTERVAL)
-	interval = self._packet_interval
+        interval = self._packet_interval
         self._packet_history.append(tuple((duty_cycle, interval, joystick)))
         if len(self._packet_history) > 10:
             self._packet_history.popleft()
