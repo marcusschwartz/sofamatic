@@ -116,7 +116,7 @@ class Roboteq(object):
     def volts(self):
         '''return the current battery voltage'''
         if self._roboteq is None:
-            return -1
+            return 0
         volts = self.roboteq_exec("?V")[2:]
         volts = float(volts.split(':')[1]) / 10
         return volts
@@ -124,7 +124,7 @@ class Roboteq(object):
     def amps(self):
         '''return the two motor amperages'''
         if self._roboteq is None:
-            return -1, -1
+            return 0, 0 
         amps = self.roboteq_exec("?BA")[3:]
         m1_amps = float(amps.split(':')[1]) / 10
         m2_amps = float(amps.split(':')[0]) / 10
