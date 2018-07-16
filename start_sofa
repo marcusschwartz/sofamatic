@@ -1,6 +1,6 @@
 #!/bin/sh
 
-kill -TERM `pidof sofa.py`
+kill -TERM `pidof sofamatic.py`
 kill -TERM `pidof sofa_display.py`
 oled-exp -i -c write "Starting sofa.py..."
 echo Starting sofa.py... > /var/run/sofa_status
