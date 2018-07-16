@@ -1,10 +1,11 @@
 #!/bin/sh
 
-kill -TERM `pidof babysit_sofamatic.sh`
-kill -TERM `pidof sofamatic.py`
-kill -TERM `pidof sofa_display.py`
+BASE=`dirname $0`
+
+$BASE/stop_sofa
+
 oled-exp -i -c write "Starting sofa.py..."
 echo Starting sofa.py... > /var/run/sofa_status
-/root/sofa/sofa/sofa_display.py >/dev/null &
-/root/sofa/sofa/babysit_sofamatic.sh >/dev/null &
+$BASE/sofa_display.py >/dev/null &
+$BASE/babysit_sofamatic.sh >/dev/null &
 exit 0

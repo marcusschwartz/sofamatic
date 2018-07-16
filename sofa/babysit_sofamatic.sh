@@ -1,5 +1,7 @@
 #!/bin/sh
 
+BASE=`dirname $0`
+
 while /bin/true; do
-	/root/sofa/sofa/sofamatic.py >/dev/null 2>&1
+	$BASE/sofamatic.py >/dev/null 2>&1
 done

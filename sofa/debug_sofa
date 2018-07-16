@@ -1,7 +1,8 @@
 #!/bin/sh
 
-kill -TERM `pidof babysit_sofamatic.sh`
-kill -TERM `pidof sofamatic.py`
-kill -TERM `pidof sofa_display.py`
-/root/sofa/sofa/sofamatic.py
+BASE=`dirname $0`
+
+$BASE/stop_sofa
+$BASE/sofamatic.py
+
 exit 0
