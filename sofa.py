@@ -65,7 +65,7 @@ class Sofa(object):
         brake = roboteq_status.details["brake"]
         pl = "%3d%%" % (100 - status["packet_loss"])
         packet = " ".join((energy, voltage, pl))
-        if brake:
+        if False and brake:
             packet += "~**PARKING BRAKE**"
         elif controller_status.details["mode"] != "IDLE":
             watts = roboteq_status.details["watts"]
@@ -105,14 +105,16 @@ class Sofa(object):
         jitter_total = 0
         interval_total = 0
         missing_total = 0
+        records = len(self._packet_history)
+        for [old_loop_util, old_interval, old_joystick] in self._packet_history:
+            interval_total += old_interval
+        interval = interval_total / records
         for [old_loop_util, old_interval, old_joystick] in self._packet_history:
             loop_util_total += old_loop_util
-            interval_total += old_interval
-            jitter_total += abs(0.1 - old_interval)
+            jitter_total += abs(interval - old_interval)
             if not old_joystick.valid():
                 missing_total += 1
 
-        records = len(self._packet_history)
 
         stats = {
             "duty_cycle": loop_util_total / records,
@@ -127,7 +129,7 @@ class Sofa(object):
         return "%5.1fwh %-5.2fwh %3d%% %4dms %4dms %2dms %3d%%" % (
             self._watt_hours, self._regen_watt_hours, status["duty_cycle"],
             int(1000 * self._packet_interval), int(1000 * status["interval"]), 
-            status["jitter"], status["packet_loss"])
+            int(1000 * status["jitter"]), status["packet_loss"])
 
     def run(self):
         last_rcv = time.time()
