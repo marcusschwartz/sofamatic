@@ -20,10 +20,14 @@ import nunchuk
 import roboteq
 import util
 
+SOFAMATIC_GRP = "224.0.0.250"
+SOFA_PORT = 31337
+REMOTE_PORT = 31338
+
 
 class Sofa(object):
     INTERVAL = 0.1  # seconds
-    GRACE = 0.2  # percent of INTERVAL, 0.0-1.0
+    GRACE = 3.0  # percent of INTERVAL, 0.0-1.0
 
     def __init__(self, roboteq_path, status_path, listen):
         self._status_path = status_path
@@ -54,11 +58,12 @@ class Sofa(object):
                          roboteq_status.string,
                          status_string])
 
-    def send_status_packet(self, addr, joystick_status, roboteq_status, controller_status, status):
+    def send_status_packet(self, joystick_status, roboteq_status, controller_status, status):
         self._udp_status_delay -= 1
-        if not addr or self._udp_status_delay > 0:
+        if self._udp_status_delay > 0:
             return
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
         watt_hours = status["watt_hours"] + status["regen_watt_hours"]
         energy = "%3.1fwh" % watt_hours
         voltage = "%4.1fv" % roboteq_status.details["volts_12"]
@@ -78,7 +83,7 @@ class Sofa(object):
             else:
                 regen_pct = 0
             packet += "~%1d%% regen" % regen_pct
-        sock.sendto(packet, addr)
+        sock.sendto(packet, (SOFAMATIC_GRP, REMOTE_PORT))
         self._udp_status_delay = 10
 
     def tally_energy(self, watts, duration):
@@ -115,7 +120,6 @@ class Sofa(object):
             if not old_joystick.valid():
                 missing_total += 1
 
-
         stats = {
             "duty_cycle": loop_util_total / records,
             "jitter": jitter_total / records,
@@ -128,7 +132,7 @@ class Sofa(object):
     def loop_status_string(self, status):
         return "%5.1fwh %-5.2fwh %3d%% %4dms %4dms %2dms %3d%%" % (
             self._watt_hours, self._regen_watt_hours, status["duty_cycle"],
-            int(1000 * self._packet_interval), int(1000 * status["interval"]), 
+            int(1000 * self._packet_interval), int(1000 * status["interval"]),
             int(1000 * status["jitter"]), status["packet_loss"])
 
     def run(self):
@@ -149,7 +153,7 @@ class Sofa(object):
             self._roboteq.set_speed(left_motor, right_motor)
 
             #
-            # loop status 
+            # loop status
             #
 
             self._add_packet_history(joystick)
@@ -161,9 +165,9 @@ class Sofa(object):
 
             loop_status.update(self.tally_energy(
                 roboteq_status.details["watts"], self._packet_interval))
-        
+
             loop_status_string = self.loop_status_string(loop_status)
 
             self.update_status_file(joystick_status, roboteq_status, controller_status, loop_status)
-            self.send_status_packet(joystick.addr(), joystick_status, roboteq_status, controller_status, loop_status)
+            self.send_status_packet(joystick_status, roboteq_status, controller_status, loop_status)
             print self.status_string(joystick_status, roboteq_status, controller_status, loop_status_string)

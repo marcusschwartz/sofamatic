@@ -28,9 +28,9 @@
 // max milliseconds between updates from sofa
 #define UPDATE_EXPIRATION 3000
 
-#define UDP_SOURCE_PORT 31337
-#define UDP_DEST_ADDR "192.168.3.1"
-#define UDP_DEST_PORT 31337
+#define REMOTE_PORT 31338
+#define SOFAMATIC_GRP IPAddress(224, 0, 0, 250)
+#define SOFA_PORT 31337
 
 Adafruit_SSD1306 oled = Adafruit_SSD1306();
 ArduinoNunchuk nunchuk = ArduinoNunchuk();
@@ -94,7 +94,7 @@ void setup_wifi() {
     delay(25);
   }
   display_status(WiFi.localIP().toString(), "");
-  udp.begin(UDP_SOURCE_PORT);
+  udp.beginMulticast(WiFi.localIP(), SOFAMATIC_GRP, REMOTE_PORT);
 }
 
 void process_status_packet() {
@@ -152,7 +152,7 @@ void send_packet() {
   nunchuk.update();
   if (validate_nunchuk(nunchuk)) {
     sprintf(packet, "%03d:%03d:%1d:%1d", nunchuk.analogX, nunchuk.analogY, nunchuk.zButton,nunchuk.cButton);
-    udp.beginPacket(UDP_DEST_ADDR, UDP_DEST_PORT);
+    udp.beginPacketMulticast(SOFAMATIC_GRP, SOFA_PORT, WiFi.localIP(), 1);
     udp.write(packet);
     udp.endPacket();
   }

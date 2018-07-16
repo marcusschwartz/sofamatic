@@ -2,6 +2,7 @@
 import math
 import select
 import socket
+import struct
 
 import util
 
@@ -57,7 +58,7 @@ class Joystick(object):
 
     def centered(self):
         if not self.valid():
-	    return False
+            return False
         if self._magnitude <= 10:
             return True
         return False
@@ -87,10 +88,14 @@ class Nunchuk(object):
     """a calibrated magnitude/angle from a wii nunchuk"""
     _sock = None
 
-    def __init__(self, addr="0.0.0.0", port=31337):
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    def __init__(self, addr="224.0.0.250", port=31337):
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._sock.bind((addr, port))
         self._sock.setblocking(0)
+        if addr.startswith("22"):
+            mreq = struct.pack("4sl", socket.inet_aton(addr), socket.INADDR_ANY)
+            self._sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
     def correct_raw_joystick(self, raw_x, raw_y):
         """turn an i2c joystick x/y value into a -100:100 x/y value"""
@@ -155,8 +160,8 @@ class Nunchuk(object):
     def get_joystick(self, timeout):
         """get a joystick value"""
         data = None
-	if timeout < 0:
-	    timeout = 0
+        if timeout < 0:
+            timeout = 0
         if select.select([self._sock], [], [], timeout):
             while True:
                 try:

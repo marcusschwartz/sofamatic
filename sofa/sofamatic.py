@@ -27,7 +27,7 @@ def main():
                       default="/var/run/sofa_status",
                       help="path to runtime status file")
     parser.add_option('-l', '--listen', dest='listen',
-                      default="0.0.0.0:31337",
+                      default="224.0.0.250:31337",
                       help="ip:port to listen on for joystick data")
 
     (options, _) = parser.parse_args()
