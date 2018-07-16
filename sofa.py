@@ -22,6 +22,9 @@ import util
 
 
 class Sofa(object):
+    INTERVAL = 0.1  # seconds
+    GRACE = 0.2  # percent of INTERVAL, 0.0-1.0
+
     def __init__(self, roboteq_path, status_path, listen):
         self._status_path = status_path
         (addr, port) = listen.split(':')
@@ -29,6 +32,9 @@ class Sofa(object):
         self._roboteq = roboteq.Roboteq(path=roboteq_path)
         self._controller = motion_complex.ComplexMotionController()
         self._udp_status_delay = 0
+        self._packet_history = collections.deque()
+        self._watt_hours = 0
+        self._regen_watt_hours = 0
 
     def update_status_file(self, joystick_status, roboteq_status, controller_status, status):
         if not self._status_path:
@@ -60,64 +66,103 @@ class Sofa(object):
         packet = " ".join((clock, voltage, pl))
         if brake:
             packet += "~**PARKING BRAKE**"
+        elif controller_status.details["mode"] != "IDLE":
+            watts = roboteq_status.details["watts"]
+            watt_hours = status["watt_hours"] + status["regen_watt_hours"]
+            packet += "~%s:%s %4dw %4dwh" % (controller_status.details["mode"],
+                                             controller_status.details["submode"],
+                                             watts, watt_hours)
+        else:
+            watt_hours = status["watt_hours"] + status["regen_watt_hours"]
+            if status["watt_hours"]:
+                regen_pct = 100 * abs(status["regen_watt_hours"]) / status["watt_hours"]
+            else:
+                regen_pct = 0
+            packet += "~%6.1fwh  %2d%% regen" % (watt_hours, regen_pct)
         sock.sendto(packet, addr)
         self._udp_status_delay = 10
+
+    def tally_energy(self, watts, duration):
+        watt_hours = (duration / 3600) * watts
+        if watt_hours > 0:
+            self._watt_hours += watt_hours
+        else:
+            self._regen_watt_hours += watt_hours
+
+        return {
+            "watt_hours": self._watt_hours,
+            "regen_watt_hours": self._regen_watt_hours,
+        }
+
+    def _add_packet_history(self, joystick):
+        duty_cycle = int(100 * self._cycle_time / self.INTERVAL)
+	interval = self._packet_interval
+        self._packet_history.append(tuple((duty_cycle, interval, joystick)))
+        if len(self._packet_history) > 10:
+            self._packet_history.popleft()
+
+    def _analyze_packet_history(self):
+        loop_util_total = 0
+        jitter_total = 0
+        interval_total = 0
+        missing_total = 0
+        for [old_loop_util, old_interval, old_joystick] in self._packet_history:
+            loop_util_total += old_loop_util
+            interval_total += old_interval
+            jitter_total += abs(0.1 - old_interval)
+            if not old_joystick.valid():
+                missing_total += 1
+
+        records = len(self._packet_history)
+
+        stats = {
+            "duty_cycle": loop_util_total / records,
+            "jitter": jitter_total / records,
+            "interval": interval_total / records,
+            "packet_loss": int(100 * missing_total / records),
+        }
+
+        return stats
+
+    def loop_status_string(self, status):
+        return "%5.1fwh %-5.2fwh %3d%% %4dms %4dms %2dms %3d%%" % (
+            self._watt_hours, self._regen_watt_hours, status["duty_cycle"],
+            int(1000 * self._packet_interval), int(1000 * status["interval"]), 
+            status["jitter"], status["packet_loss"])
 
     def run(self):
         last_rcv = time.time()
         timeout = 0
-        INTERVAL = 0.1  # seconds
-        GRACE = 0.2  # percent of INTERVAL, 0.0-1.0
-        packet_history = collections.deque()
         while True:
             now = time.time()
-            cycle_time = now - last_rcv
-            timeout = (INTERVAL + (INTERVAL * GRACE)) - cycle_time
+            self._cycle_time = now - last_rcv
+            timeout = (self.INTERVAL + (self.INTERVAL * self.GRACE)) - self._cycle_time
             joystick = self._nunchuk.get_joystick(timeout)
             now = time.time()
-            packet_interval = int(1000 * (now - last_rcv))
+            self._packet_interval = now - last_rcv
             last_rcv = now
-
-            stats = {
-                "loop_util": cycle_time / INTERVAL,
-                "interval": packet_interval,
-            }
-
-            packet_history.append(tuple((int(100 * cycle_time / INTERVAL),
-                                            packet_interval, joystick)))
-            if len(packet_history) > 10:
-                packet_history.popleft()
-
-            loop_util_total = 0
-            jitter_total = 0
-            interval_total = 0
-            missing_total = 0
-            for [old_loop_util, old_interval, old_joystick] in packet_history:
-                loop_util_total += old_loop_util
-                interval_total += old_interval
-                jitter_total += abs(100 - old_interval)
-                if not old_joystick.valid():
-                    missing_total += 1
-
-            loop_util_avg = loop_util_total / len(packet_history)
-            jitter_avg = jitter_total / len(packet_history)
-            interval_avg = interval_total / len(packet_history)
-            packet_loss_pct = int(100 * missing_total / len(packet_history))
-
-            stats["packet_loss"] = packet_loss_pct
-
-            status_string = "%3d%% %4dms %4dms %2dms %3d%%" % (100 * cycle_time / INTERVAL,
-                                             packet_interval, interval_avg, jitter_avg, packet_loss_pct)
 
             self._controller.update_joystick(joystick)
 
             left_motor, right_motor = self._controller.motor_speeds()
             self._roboteq.set_speed(left_motor, right_motor)
 
+            #
+            # loop status 
+            #
+
+            self._add_packet_history(joystick)
+
+            loop_status = self._analyze_packet_history()
             joystick_status = joystick.status()
             roboteq_status = self._roboteq.status()
             controller_status = self._controller.status()
 
-            self.update_status_file(joystick_status, roboteq_status, controller_status, stats)
-            self.send_status_packet(joystick.addr(), joystick_status, roboteq_status, controller_status, stats)
-            print self.status_string(joystick_status, roboteq_status, controller_status, status_string)
+            loop_status.update(self.tally_energy(
+                roboteq_status.details["watts"], self._packet_interval))
+        
+            loop_status_string = self.loop_status_string(loop_status)
+
+            self.update_status_file(joystick_status, roboteq_status, controller_status, loop_status)
+            self.send_status_packet(joystick.addr(), joystick_status, roboteq_status, controller_status, loop_status)
+            print self.status_string(joystick_status, roboteq_status, controller_status, loop_status_string)
