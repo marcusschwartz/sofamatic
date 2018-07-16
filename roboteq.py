@@ -41,6 +41,7 @@ class Roboteq(object):
     def status(self):
         amps_l, amps_r = self.amps()
         volts = self.volts()
+        watts = volts * (amps_l + amps_r)
         brake_active = self.brake_active()
         if brake_active:
             brake = 'BRAKE'
@@ -48,14 +49,15 @@ class Roboteq(object):
             brake = ''
 
         status = util.Status()
-        status_fmt = "{:5s} {:4.1f}v ({:5.2f}v)  {:4.1f}a {:4.1f}a {:4d}l {:4d}r"
-        status.string = status_fmt.format(brake, volts, volts / 3, amps_l, amps_r,
+        status_fmt = "{:5s} {:4.1f}v ({:5.2f}v)  {:4.1f}a {:4.1f}a {:4d}w {:4d}l {:4d}r"
+        status.string = status_fmt.format(brake, volts, volts / 3, amps_l, amps_r, int(watts),
                                           self._m1_current, self._m2_current)
         status.details = {
             "volts": volts,
             "volts_12": volts / 3,
             "amps_l": amps_l,
             "amps_r": amps_r,
+            "watts": watts,
             "brake": brake_active,
         }
 
