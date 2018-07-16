@@ -59,26 +59,25 @@ class Sofa(object):
         if not addr or self._udp_status_delay > 0:
             return
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        clock = time.strftime("%I:%M:%S").lstrip("0")
+        watt_hours = status["watt_hours"] + status["regen_watt_hours"]
+        energy = "%3.1fwh" % watt_hours
         voltage = "%4.1fv" % roboteq_status.details["volts_12"]
         brake = roboteq_status.details["brake"]
         pl = "%3d%%" % (100 - status["packet_loss"])
-        packet = " ".join((clock, voltage, pl))
+        packet = " ".join((energy, voltage, pl))
         if brake:
             packet += "~**PARKING BRAKE**"
         elif controller_status.details["mode"] != "IDLE":
             watts = roboteq_status.details["watts"]
-            watt_hours = status["watt_hours"] + status["regen_watt_hours"]
-            packet += "~%s:%s %4dw %4dwh" % (controller_status.details["mode"],
-                                             controller_status.details["submode"],
-                                             watts, watt_hours)
+            packet += "~%s:%s %4dw" % (controller_status.details["mode"],
+                                       controller_status.details["submode"],
+                                       watts)
         else:
-            watt_hours = status["watt_hours"] + status["regen_watt_hours"]
             if status["watt_hours"]:
                 regen_pct = 100 * abs(status["regen_watt_hours"]) / status["watt_hours"]
             else:
                 regen_pct = 0
-            packet += "~%6.1fwh  %2d%% regen" % (watt_hours, regen_pct)
+            packet += "~%1d%% regen" % regen_pct
         sock.sendto(packet, addr)
         self._udp_status_delay = 10
 
