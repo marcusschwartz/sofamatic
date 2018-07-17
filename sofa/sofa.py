@@ -58,12 +58,12 @@ class Sofa(object):
                          roboteq_status.string,
                          status_string])
 
-    def send_status_packet(self, joystick_status, roboteq_status, controller_status, status):
+    def send_status_packet(self, addr, joystick_status, roboteq_status, controller_status, status):
         self._udp_status_delay -= 1
         if self._udp_status_delay > 0:
             return
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+        #sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
         watt_hours = status["watt_hours"] + status["regen_watt_hours"]
         energy = "%3.1fwh" % watt_hours
         voltage = "%4.1fv" % roboteq_status.details["volts_12"]
@@ -83,7 +83,7 @@ class Sofa(object):
             else:
                 regen_pct = 0
             packet += "~%1d%% regen" % regen_pct
-        sock.sendto(packet, (SOFAMATIC_GRP, REMOTE_PORT))
+        sock.sendto(packet, addr)
         self._udp_status_delay = 10
 
     def tally_energy(self, watts, duration):
@@ -169,5 +169,5 @@ class Sofa(object):
             loop_status_string = self.loop_status_string(loop_status)
 
             self.update_status_file(joystick_status, roboteq_status, controller_status, loop_status)
-            self.send_status_packet(joystick_status, roboteq_status, controller_status, loop_status)
+            self.send_status_packet(joystick.addr(), joystick_status, roboteq_status, controller_status, loop_status)
             print self.status_string(joystick_status, roboteq_status, controller_status, loop_status_string)
