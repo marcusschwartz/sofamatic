@@ -30,6 +30,7 @@
 
 #define REMOTE_PORT 31338
 #define SOFAMATIC_GRP IPAddress(224, 0, 0, 250)
+#define SOFA_ADDR IPAddress(192,168,  3,  1)
 #define SOFA_PORT 31337
 
 Adafruit_SSD1306 oled = Adafruit_SSD1306();
@@ -94,7 +95,8 @@ void setup_wifi() {
     delay(25);
   }
   display_status(WiFi.localIP().toString(), "");
-  udp.beginMulticast(WiFi.localIP(), SOFAMATIC_GRP, REMOTE_PORT);
+  //udp.beginMulticast(WiFi.localIP(), SOFAMATIC_GRP, REMOTE_PORT);
+  udp.begin(REMOTE_PORT);
 }
 
 void process_status_packet() {
@@ -152,7 +154,8 @@ void send_packet() {
   nunchuk.update();
   if (validate_nunchuk(nunchuk)) {
     sprintf(packet, "%03d:%03d:%1d:%1d", nunchuk.analogX, nunchuk.analogY, nunchuk.zButton,nunchuk.cButton);
-    udp.beginPacketMulticast(SOFAMATIC_GRP, SOFA_PORT, WiFi.localIP(), 1);
+    //udp.beginPacketMulticast(SOFAMATIC_GRP, SOFA_PORT, WiFi.localIP(), 1);
+    udp.beginPacket("192.168.3.1", SOFA_PORT);
     udp.write(packet);
     udp.endPacket();
   }
