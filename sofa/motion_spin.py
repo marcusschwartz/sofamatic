@@ -10,8 +10,8 @@ MAX_SPEED = 150.0
 
 
 class SpinMC(MotionController):
-    _name = "SPN"
-    _direction = "NON"
+    _name = "SPIN"
+    _direction = "NONE"
     _turn_speed = 0
 
     def active(self):
@@ -29,10 +29,10 @@ class SpinMC(MotionController):
         angle = self._joystick.angle()
 
         if angle < JOY_DEADZONE or angle > 360 - JOY_DEADZONE:
-            direction = 'NON'
+            direction = 'NONE'
             turn_speed = 0
         elif angle > 180 - JOY_DEADZONE and angle < 180 + JOY_DEADZONE:
-            direction = 'NON'
+            direction = 'NONE'
             turn_speed = 0
         elif angle <= 90:
             direction = 'RIGHT'
@@ -48,7 +48,7 @@ class SpinMC(MotionController):
             turn_speed = linear_map(angle, 270, 360 - JOY_DEADZONE, 1.0, 0.0)
 
         self._direction = direction
-        self._turn_speed = process_accel(turn_speed, self._turn_speed, 'SPN')
+        self._turn_speed = process_accel(turn_speed, self._turn_speed, 'SPIN')
 
     def motor_speeds(self):
         turn_speed = self._turn_speed
