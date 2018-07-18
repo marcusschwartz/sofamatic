@@ -34,12 +34,13 @@ class Joystick(object):
     _button_c = 0
     _addr = ''
 
-    def __init__(self, magnitude, angle, button_c, button_z, addr):
+    def __init__(self, magnitude, angle, button_c, button_z, addr, status_age):
         self._magnitude = magnitude
         self._angle = angle
         self._button_c = button_c
         self._button_z = button_z
         self._addr = addr
+	self._status_age = status_age
 
     def status(self):
         if self._magnitude >= 0:
@@ -50,6 +51,7 @@ class Joystick(object):
         status = util.Status()
         status.string = string
         status.details = {
+	    'status_age': self._status_age,
             'magnitude': self._magnitude,
             'angle': self._angle,
         }
@@ -83,6 +85,9 @@ class Joystick(object):
     def addr(self):
         return self._addr
 
+    @property
+    def status_age(self):
+        return self._status_age
 
 class Nunchuk(object):
     """a calibrated magnitude/angle from a wii nunchuk"""
@@ -169,9 +174,9 @@ class Nunchuk(object):
                 except socket.error:
                     break
         if not data:
-            return Joystick(-1, -1, False, False, None)
+            return Joystick(-1, -1, False, False, None, -1)
 
-        raw_x_s, raw_y_s, raw_z, raw_c = data.split(':')
+        raw_x_s, raw_y_s, raw_z, raw_c, status_age = data.split(':')
         joy_x, joy_y = self.correct_raw_joystick(int(raw_x_s), int(raw_y_s))
         button_z = False
         if raw_z == '1':
@@ -182,4 +187,4 @@ class Nunchuk(object):
 
         magnitude, angle = self.get_joystick_vector(joy_x, joy_y)
 
-        return Joystick(magnitude, angle, button_c, button_z, addr)
+        return Joystick(magnitude, angle, button_c, button_z, addr, status_age)
