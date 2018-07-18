@@ -5,23 +5,23 @@ from motion import MotionController, linear_map, gamma, process_accel
 
 JOY_MODES = [
     # name, start_angle, m1_speed, m2_speed, accel_profile
-    ["STRT", 0, 1.0, 1.0, 'NORMAL'],
-    ["TURN", 10, 1.0, 1.0, 'NORMAL'],
-    ["TURN", 90, 1.2, 0.4, 'NORMAL'],
-    ["CRAWL", 135, 1.0, 0.0, 'NORMAL'],
-    ["STOP", 165, 0.0, 0.0, 'NORMAL'],
-    ["BRAKE", 170, 0.0, 0.0, 'BRAKE'],
-    ["", 180, 0.0, 0.0, "BRAKE"],
+    ["STR", 0, 1.0, 1.0, 'NORMAL'],
+    ["TRN", 10, 1.0, 1.0, 'NORMAL'],
+    ["TRN", 90, 1.2, 0.4, 'NORMAL'],
+    ["CRL", 135, 1.0, 0.0, 'NORMAL'],
+    ["STP", 165, 0.0, 0.0, 'NORMAL'],
+    ["BRK", 170, 0.0, 0.0, 'BRK'],
+    ["", 180, 0.0, 0.0, "BRK"],
 ]
 
 MAX_FWD_SPEED = 0.55
-MAX_TURN_FWD_SPEED = 0.60
+MAX_TRN_FWD_SPEED = 0.60
 
 TURBO_MAX_FWD_SPEED = 1.0
-TURBO_MAX_TURN_FWD_SPEED = 1.0
+TURBO_MAX_TRN_FWD_SPEED = 1.0
 
 MAX_REV_SPEED = 0.2
-MAX_TURN_REV_SPEED = 0.2
+MAX_TRN_REV_SPEED = 0.2
 
 MOTOR_MULTIPLIER = 900
 
@@ -48,7 +48,7 @@ class NormalMC(MotionController):
         magnitude = self._joystick.magnitude()
         angle = self._joystick.angle()
 
-        if magnitude > 10 and self._name == 'FORWARD':
+        if magnitude > 10 and self._name == 'FWD':
             if angle <= 180:
                 turn_direction = 'RIGHT'
                 turn_angle = angle
@@ -79,7 +79,7 @@ class NormalMC(MotionController):
         accel_profile = None
 
         if self._joystick.centered() or not self._joystick.valid():
-            return "COAST", 0.0, 0.0, "NORMAL"
+            return "CST", 0.0, 0.0, "NORMAL"
 
         for i in range(0, len(JOY_MODES) - 1):
             submode, start_angle, start_m1_speed, start_m2_speed, \
@@ -99,17 +99,17 @@ class NormalMC(MotionController):
         return submode, m1_speed, m2_speed, accel_profile
 
     def max_speed(self, turn_angle):
-        if self._name == 'FORWARD':
+        if self._name == 'FWD':
             if self._joystick.button_z():
-                max_speed = ((TURBO_MAX_FWD_SPEED - TURBO_MAX_TURN_FWD_SPEED) *
-                             ((135.0 - float(turn_angle)) / 135.0)) + TURBO_MAX_TURN_FWD_SPEED
+                max_speed = ((TURBO_MAX_FWD_SPEED - TURBO_MAX_TRN_FWD_SPEED) *
+                             ((135.0 - float(turn_angle)) / 135.0)) + TURBO_MAX_TRN_FWD_SPEED
             else:
-                max_speed = ((MAX_FWD_SPEED - MAX_TURN_FWD_SPEED) *
-                             ((135.0 - float(turn_angle)) / 135.0)) + MAX_TURN_FWD_SPEED
+                max_speed = ((MAX_FWD_SPEED - MAX_TRN_FWD_SPEED) *
+                             ((135.0 - float(turn_angle)) / 135.0)) + MAX_TRN_FWD_SPEED
 
-        elif self._name == 'REVERSE':
-            max_speed = ((MAX_REV_SPEED - MAX_TURN_REV_SPEED) *
-                         ((135.0 - float(turn_angle)) / 135.0)) + MAX_TURN_FWD_SPEED
+        elif self._name == 'REV':
+            max_speed = ((MAX_REV_SPEED - MAX_TRN_REV_SPEED) *
+                         ((135.0 - float(turn_angle)) / 135.0)) + MAX_TRN_FWD_SPEED
 
         return max_speed
 
@@ -120,7 +120,7 @@ class NormalMC(MotionController):
 
         max_speed = self.max_speed(turn_angle)
 
-        if self._submode != 'COAST':
+        if self._submode != 'CST':
             speed = gamma(self._joystick.magnitude()) / 100.0
         else:
             speed = 0.0
@@ -147,7 +147,7 @@ class NormalMC(MotionController):
 
         left_motor *= 0.95
 
-        if self._name == 'REVERSE':
+        if self._name == 'REV':
             left_motor *= -1.0
             right_motor *= -1.0
 
@@ -158,8 +158,8 @@ class NormalMC(MotionController):
 
 
 class ForwardMC(NormalMC):
-    _name = "FORWARD"
+    _name = "FWD"
 
 
 class ReverseMC(NormalMC):
-    _name = "REVERSE"
+    _name = "REV"
