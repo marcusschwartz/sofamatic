@@ -35,16 +35,16 @@ class SpinMC(MotionController):
             direction = 'NON'
             turn_speed = 0
         elif angle <= 90:
-            direction = 'RHT'
+            direction = 'RIGHT'
             turn_speed = linear_map(angle, JOY_DEADZONE, 90, 0.0, 1.0)
         elif angle <= 180 - JOY_DEADZONE:
-            direction = 'RHT'
+            direction = 'RIGHT'
             turn_speed = linear_map(angle, 90, 180 - JOY_DEADZONE, 1.0, 0.0)
         elif angle <= 270:
-            direction = 'LFT'
+            direction = 'LEFT'
             turn_speed = linear_map(angle, 180 + JOY_DEADZONE, 270, 0.0, 1.0)
         else:
-            direction = 'LFT'
+            direction = 'LEFT'
             turn_speed = linear_map(angle, 270, 360 - JOY_DEADZONE, 1.0, 0.0)
 
         self._direction = direction
@@ -54,9 +54,9 @@ class SpinMC(MotionController):
         turn_speed = self._turn_speed
 
         # XXX doesn't switch directions with accel properly
-        if self._direction == 'LFT':
+        if self._direction == 'LEFT':
             return turn_speed * -1.0 * MAX_SPEED, turn_speed * MAX_SPEED
-        if self._direction == 'RHT':
+        if self._direction == 'RIGHT':
             return turn_speed * MAX_SPEED, turn_speed * -1.0 * MAX_SPEED
 
         return 0, 0
