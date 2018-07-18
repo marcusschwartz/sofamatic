@@ -24,7 +24,6 @@ SOFAMATIC_GRP = "224.0.0.250"
 SOFA_PORT = 31337
 REMOTE_PORT = 31338
 
-
 class Sofa(object):
     INTERVAL = 0.1  # seconds
     GRACE = 3.0  # percent of INTERVAL, 0.0-1.0
@@ -39,6 +38,7 @@ class Sofa(object):
         self._packet_history = collections.deque()
         self._watt_hours = 0
         self._regen_watt_hours = 0
+	self._last_mode = None
 
     def update_status_file(self, joystick_status, roboteq_status, controller_status, status):
         if not self._status_path:
@@ -59,24 +59,38 @@ class Sofa(object):
                          status_string])
 
     def send_status_packet(self, addr, joystick_status, roboteq_status, controller_status, status):
+        send_now = False
+	brake_mode = ''
+	if roboteq_status.details["brake"]:
+	    brake_mode = 'BRAKE'
+	mode = ":".join([controller_status.details["mode"],
+	                 controller_status.details["submode"],
+			 brake_mode])
+	if mode != self._last_mode:
+	    self._last_mode = mode
+	    send_now = True
         self._udp_status_delay -= 1
-        if self._udp_status_delay > 0:
+	remote_status_age = joystick_status.details["status_age"]
+        if not send_now and (not addr or (self._udp_status_delay > 0 and remote_status_age > 1000)):
             return
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         #sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
         watt_hours = status["watt_hours"] + status["regen_watt_hours"]
         energy = "%3.1fwh" % watt_hours
         voltage = "%4.1fv" % roboteq_status.details["volts_12"]
-        brake = roboteq_status.details["brake"]
         pl = "%3d%%" % (100 - status["packet_loss"])
         packet = " ".join((energy, voltage, pl))
-        if brake:
+        if brake_mode == 'BRAKE':
             packet += "~**PARKING BRAKE**"
         elif controller_status.details["mode"] != "IDLE":
             watts = roboteq_status.details["watts"]
-            packet += "~%s:%s %4dw" % (controller_status.details["mode"],
-                                       controller_status.details["submode"],
-                                       watts)
+	    avg_motor_pct = (abs(controller_status.details["motor_l"]) +
+	                     abs(controller_status.details["motor_r"])) / 20
+            packet += "~%s:%s %3d%% %4dw" % (controller_status.details["mode"],
+                                             controller_status.details["submode"],
+					     avg_motor_pct,
+                                             watts)
         else:
             if status["watt_hours"]:
                 regen_pct = 100 * abs(status["regen_watt_hours"]) / status["watt_hours"]
@@ -137,12 +151,16 @@ class Sofa(object):
 
     def run(self):
         last_rcv = time.time()
+	last_remote_addr = None
         timeout = 0
         while True:
             now = time.time()
             self._cycle_time = now - last_rcv
             timeout = (self.INTERVAL + (self.INTERVAL * self.GRACE)) - self._cycle_time
             joystick = self._nunchuk.get_joystick(timeout)
+	    if joystick.addr():
+	        last_remote_addr = joystick.addr()
+
             now = time.time()
             self._packet_interval = now - last_rcv
             last_rcv = now
@@ -169,5 +187,5 @@ class Sofa(object):
             loop_status_string = self.loop_status_string(loop_status)
 
             self.update_status_file(joystick_status, roboteq_status, controller_status, loop_status)
-            self.send_status_packet(joystick.addr(), joystick_status, roboteq_status, controller_status, loop_status)
+            self.send_status_packet(last_remote_addr, joystick_status, roboteq_status, controller_status, loop_status)
             print self.status_string(joystick_status, roboteq_status, controller_status, loop_status_string)
