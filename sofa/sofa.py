@@ -26,7 +26,7 @@ REMOTE_PORT = 31338
 
 class Sofa(object):
     INTERVAL = 0.1  # seconds
-    GRACE = 3.0  # percent of INTERVAL, 0.0-1.0
+    GRACE = 0.15  # percent of INTERVAL, 0.0-1.0
 
     def __init__(self, roboteq_path, status_path, listen):
         self._status_path = status_path
@@ -59,6 +59,8 @@ class Sofa(object):
                          status_string])
 
     def send_status_packet(self, addr, joystick_status, roboteq_status, controller_status, status):
+        if not addr:
+            return
         send_now = False
         brake_mode = ''
         if roboteq_status.details["brake"]:
@@ -71,7 +73,7 @@ class Sofa(object):
             send_now = True
         self._udp_status_delay -= 1
         remote_status_age = joystick_status.details["status_age"]
-        if not send_now and (not addr or (self._udp_status_delay > 0 and remote_status_age > 1000)):
+        if not send_now and (self._udp_status_delay > 0 and remote_status_age > 1000):
             return
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -81,7 +83,9 @@ class Sofa(object):
         voltage = "%4.1fv" % roboteq_status.details["volts_12"]
         pl = "%3d%%" % (100 - status["packet_loss"])
         packet = " ".join((energy, voltage, pl))
-        if brake_mode == 'BRAKE':
+	if brake_mode == 'BRAKE' and controller_status.details["mode"] != "IDLE":
+	    packet = "&PARKING~BRAKE"
+        elif brake_mode == 'BRAKE':
             packet += "~**PARKING BRAKE**"
         elif controller_status.details["mode"] != "IDLE":
             watts = roboteq_status.details["watts"]
