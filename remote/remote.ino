@@ -73,7 +73,8 @@ void display_spinner() {
    byte spinner_right_boundary = 128 - spinner_left_boundary - spinner_logo_width;
    byte spinner_step = 3;
    
-   oled.fillRect(0, 16, 128, 16, BLACK);
+   oled.clearDisplay();
+   oled.drawBitmap(0, 0,  sofamatic_logo, sofamatic_logo_width, sofamatic_logo_height, 1);
    if (spinner_direction > 0) {
      oled.drawBitmap(spinner_position, 16, spinner_logo_right, spinner_logo_width, spinner_logo_height, 1);
    } else {
