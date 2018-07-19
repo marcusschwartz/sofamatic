@@ -45,8 +45,8 @@ class NormalMC(MotionController):
         return False
 
     def decode_turn(self):
-        magnitude = self._joystick.magnitude()
-        angle = self._joystick.angle()
+        magnitude = self._joystick.magnitude
+        angle = self._joystick.angle
 
         if magnitude > 10 and self._name == 'FWD':
             if angle <= 180:
@@ -78,7 +78,7 @@ class NormalMC(MotionController):
         end_m2_speed = 0
         accel_profile = None
 
-        if self._joystick.centered() or not self._joystick.valid():
+        if self._joystick.centered or not self._joystick.valid:
             return "COAST", 0.0, 0.0, "NORMAL"
 
         for i in range(0, len(JOY_MODES) - 1):
@@ -100,7 +100,7 @@ class NormalMC(MotionController):
 
     def max_speed(self, turn_angle):
         if self._name == 'FWD':
-            if self._joystick.button_z():
+            if self._joystick.button_z:
                 max_speed = ((TURBO_MAX_FWD_SPEED - TURBO_MAX_TURN_FWD_SPEED) *
                              ((135.0 - float(turn_angle)) / 135.0)) + TURBO_MAX_TURN_FWD_SPEED
             else:
@@ -121,11 +121,11 @@ class NormalMC(MotionController):
         max_speed = self.max_speed(turn_angle)
 
         if self._submode != 'COAST':
-            speed = gamma(self._joystick.magnitude()) / 100.0
+            speed = gamma(self._joystick.magnitude) / 100.0
         else:
             speed = 0.0
 
-        if accel_profile == 'NORMAL' and self._joystick.button_z():
+        if accel_profile == 'NORMAL' and self._joystick.button_z:
             accel_profile = 'TURBO'
 
         self._speed = process_accel(speed, self._speed, accel_profile)

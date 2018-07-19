@@ -26,7 +26,7 @@ class SpinMC(MotionController):
         direction = None
         turn_speed = 0
 
-        angle = self._joystick.angle()
+        angle = self._joystick.angle
 
         if angle < JOY_DEADZONE or angle > 360 - JOY_DEADZONE:
             direction = 'NONE'

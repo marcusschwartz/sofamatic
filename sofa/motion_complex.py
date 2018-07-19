@@ -11,10 +11,10 @@ def controller_selector(joystick):
     determine which real motion controller to use based on
     the initial joystick position
     """
-    angle = joystick.angle()
+    angle = joystick.angle
     controller_class = None
 
-    if joystick.button_c():
+    if joystick.button_c:
         if angle <= 45 or angle >= 315:
             controller_class = SpinMC
         elif angle > 45 and angle < 135:
@@ -68,16 +68,16 @@ class ComplexMotionController(object):
         return ""
 
     def update_joystick(self, joystick):
-        if joystick.valid():
+        if joystick.valid:
             self._missed_data = 0
 
             # only return online when the joystick is idle
-            if not self._online and joystick.centered():
+            if not self._online and joystick.centered:
                 self._online = True
 
             # if a controller isn't running, see if one should be:
             if self._online and not self._controller \
-               and not joystick.centered():
+               and not joystick.centered:
                 self._controller = controller_selector(joystick)
         else:
             # we don't have a valid joystick, prepare to go offline
@@ -90,7 +90,7 @@ class ComplexMotionController(object):
             self._controller.update_joystick(joystick)
 
             # if the existing controller is idle, kill it
-            if not self._controller.active() and joystick.centered():
+            if not self._controller.active() and joystick.centered:
                 self._controller = None
 
     def motor_speeds(self):

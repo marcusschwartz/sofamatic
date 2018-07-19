@@ -42,6 +42,7 @@ class Joystick(object):
         self._addr = addr
 	self._status_age = status_age
 
+    @property
     def status(self):
         if self._magnitude >= 0:
             string = "{:3d}m {:3d}o".format(
@@ -58,30 +59,37 @@ class Joystick(object):
 
         return status
 
+    @property
     def centered(self):
-        if not self.valid():
+        if not self.valid:
             return False
         if self._magnitude <= 10:
             return True
         return False
 
+    @property
     def valid(self):
         if self._magnitude >= 0:
             return True
         return False
 
+    @property
     def magnitude(self):
         return self._magnitude
 
+    @property
     def angle(self):
         return self._angle
 
+    @property
     def button_c(self):
         return self._button_c
 
+    @property
     def button_z(self):
         return self._button_z
 
+    @property
     def addr(self):
         return self._addr
 

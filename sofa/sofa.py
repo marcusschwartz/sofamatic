@@ -135,7 +135,7 @@ class Sofa(object):
         for [old_loop_util, old_interval, old_joystick] in self._packet_history:
             loop_util_total += old_loop_util
             jitter_total += abs(interval - old_interval)
-            if not old_joystick.valid():
+            if not old_joystick.valid:
                 missing_total += 1
 
         stats = {
@@ -162,8 +162,8 @@ class Sofa(object):
             self._cycle_time = now - last_rcv
             timeout = (self.INTERVAL + (self.INTERVAL * self.GRACE)) - self._cycle_time
             joystick = self._nunchuk.get_joystick(timeout)
-            if joystick.addr():
-                last_remote_addr = joystick.addr()
+            if joystick.addr:
+                last_remote_addr = joystick.addr
 
             now = time.time()
             self._packet_interval = now - last_rcv
@@ -181,7 +181,7 @@ class Sofa(object):
             self._add_packet_history(joystick)
 
             loop_status = self._analyze_packet_history()
-            joystick_status = joystick.status()
+            joystick_status = joystick.status
             roboteq_status = self._roboteq.status()
             controller_status = self._controller.status()
 
