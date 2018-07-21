@@ -7,7 +7,7 @@ import status
 class EnergyTrackerStatus(status.Status):
     _attrs = ['volts', 'amps_l', 'amps_r', 'watt_hours', 'regen_watt_hours']
     _dashboard_fmt = ['{volts:4.2f}v', '{amps_l:3.1f}al', '{amps_r:3.1f}ar',
-                      '{0.watts:3d}w', '{watt_hours:5.2f}wh',
+                      '{0.watts:4.1f}w', '{watt_hours:5.2f}wh',
                       '{regen_watt_hours:-6.3f}wh']
 
     @property
@@ -26,6 +26,10 @@ class EnergyTracker(object):
     def update(self, volts, amps_l, amps_r):
         now = time.time()
 
+	self._volts = volts
+	self._amps_l = amps_l
+
+	self._amps_r = amps_r
         watts = volts * (amps_l + amps_r)
         duration = self._last_update_ts - now
         current_watt_hours = watts * (duration / 3600)
