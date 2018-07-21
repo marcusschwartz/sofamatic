@@ -4,6 +4,8 @@
 class Status(tuple):
     _attrs = []
     _dashboard_fmt = []
+    _remote_parked_fmt = []
+    _remote_idle_fmt = []
 
     def __new__(cls, **kwargs):
         args = []
@@ -16,6 +18,14 @@ class Status(tuple):
     @property
     def dashboard(self):
         return self._render(self._dashboard_fmt, 'dashboard')
+
+    @property
+    def remote_parked(self):
+        return self._render(self._remote_parked_fmt, 'remote_parked')
+
+    @property
+    def remote_idle(self):
+        return self._render(self._remote_idle_fmt, 'remote_idle')
 
     def __repr__(self):
         rendered = []

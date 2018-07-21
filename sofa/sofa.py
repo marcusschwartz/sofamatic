@@ -23,6 +23,8 @@ class SofaStatus(status.Status):
     _dashboard_fmt = ['{controller} |',
                       '{0.receiver.remote.joystick.dashboard} |',
                       '{roboteq} |', '{receiver}']
+    _remote_parked_fmt = ['{0.roboteq.energy.watt_hours:3.1f}wh {0.roboteq.energy.volts:4.1f}v {0.receiver.signal_strength:3d}%~**PARKING BRAKE**']
+    _remote_idle_fmt = ['{0.roboteq.energy.watt_hours:3.1f}wh {0.roboteq.energy.volts:4.1f}v {0.receiver.signal_strength:3d}%~']
 
 
 class Sofa(object):
@@ -45,7 +47,11 @@ class Sofa(object):
     def _update_status(self):
         _status = self.status
         self._update_status_file(_status)
-        self._receiver.remote.update_status(_status)
+        if self._roboteq.brake_active:
+            remote_status = _status.remote_parked
+        else:
+            remote_status = _status.remote_idle
+        self._receiver.remote.update_status(remote_status)
         print _status.dashboard
 
     def _update_status_file(self, _status):
