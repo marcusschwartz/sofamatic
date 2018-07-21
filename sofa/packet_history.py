@@ -49,7 +49,7 @@ class PacketHistory(collections.deque):
             jitter_total += abs((timestamp - last_timestamp) - interval_avg)
             last_timestamp = timestamp
 
-        return tuple((int(100 * (cycle_time / records) / self._interval),
+        return tuple((int(100 * (cycle_time_total / records) / self._interval),
                       int(100 * cycle_time_max / self._interval),
                       int(1000 * interval_total / records),
                       int(1000 * jitter_total / records),
