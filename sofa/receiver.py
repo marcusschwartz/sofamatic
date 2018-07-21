@@ -16,6 +16,10 @@ class ReceiverStatus(status.Status):
     _dashboard_fmt = ['{avg_duty_cycle:2d}%', '{max_duty_cycle:2d}%',
                       '{interval:3d}ms', '{jitter:2d}ms', '{packet_loss:3d}%']
 
+    @property
+    def signal_strength(self):
+    	return 100 - self[4]
+
 
 class RemoteControlReceiver(object):
     """a calibrated magnitude/angle from a wii nunchuk"""
@@ -33,7 +37,7 @@ class RemoteControlReceiver(object):
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._sock.bind((addr, port))
         self._sock.setblocking(0)
-        self._remote = remote.RemoteControl(None, joystick.new_centered(), 1)
+        self._remote = remote.RemoteControl(None, self._sock, joystick.new_centered(), 1)
 
     @property
     def remote(self):
@@ -75,4 +79,4 @@ class RemoteControlReceiver(object):
             raw_x, raw_y, raw_z, raw_c, status_age = data.split(':')
             _joystick = nunchuk_joystick.from_remote_nunchuk(
                 raw_x, raw_y, raw_z, raw_c, now)
-            self._remote = remote.RemoteControl(addr, _joystick, status_age)
+            self._remote = remote.RemoteControl(addr, self._sock, _joystick, status_age)

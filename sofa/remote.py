@@ -10,14 +10,20 @@ class RemoteControlStatus(status.Status):
 
     @property
     def update_age(self):
-        return time.time() - self.updated
+        return time.time() - self[1]
 
 
 class RemoteControl(object):
-    def __init__(self, addr, joystick, status_update_age):
+    def __init__(self, addr, sock, joystick, status_update_age):
         self._joystick = joystick
         self._addr = addr
-        self._last_status_update = time.time() - float(int(status_update_age) / 1000)
+	self._sock = sock
+        if int(status_update_age) < 0:
+            self._last_status_update_ts = 0
+        else:
+            self._last_status_update_ts = time.time() - float(
+                    int(status_update_age) / 1000)
+        self._last_status_update = ''
 
     @property
     def addr(self):
@@ -30,11 +36,21 @@ class RemoteControl(object):
     @property
     def status(self):
         return RemoteControlStatus(
-            updated=self._last_status_update,
+            updated=self._last_status_update_ts,
             joystick=self._joystick)
 
-    def update_status(self, _status):
-        pass
+    def update_status(self, status_update):
+        if not self._addr:
+            return
+        now = time.time()
+	age = now - self._last_status_update_ts
+        if age < 1.0 and status_update == self._last_status_update:
+            return
+        self._last_status_update = status_update
+	self._last_status_update_ts = now
+        
+        self._sock.sendto(status_update, self._addr)
+
 #    """
 #        if not self._addr:
 #            return
@@ -53,7 +69,6 @@ class RemoteControl(object):
 #        if not send_now and (self._udp_status_delay > 0 and remote_status_age > 1000):
 #            return
 #
-#        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 #        # sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
 #        watt_hours = status["watt_hours"] + status["regen_watt_hours"]
 #        energy = "%3.1fwh" % watt_hours
@@ -78,6 +93,5 @@ class RemoteControl(object):
 #            else:
 #                regen_pct = 0
 #            packet += "~%1d%% regen" % regen_pct
-#        sock.sendto(packet, addr)
 #        self._udp_status_delay = 10
 #    """
