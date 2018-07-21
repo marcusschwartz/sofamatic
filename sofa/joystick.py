@@ -17,7 +17,7 @@ class Joystick(status.Status):
 
     @property
     def c_text(self):
-        if self[2]:
+        if self[3]:
             return 'C'
         return 'c'
 

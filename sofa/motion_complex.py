@@ -88,7 +88,7 @@ class ComplexMotionController(MotionController):
             return
 
         # if the existing controller is idle, kill it
-        if not self._controller.active() and self._joystick.centered:
+        if not self._controller.active and self._joystick.centered:
             self._controller = None
 
         if self._controller:
