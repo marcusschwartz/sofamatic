@@ -9,8 +9,8 @@ import status
 
 class RoboteqStatus(status.Status):
     _attrs = ['energy', 'brake', 'speed_l', 'speed_r']
-    _dashboard_fmt = ['{energy:20s}', '{0.brake_text:5s}', '{speed_l:3.0f}l',
-                      '{speed_r:3.0f}r']
+    _dashboard_fmt = ['{energy:20s}', '{0.brake_text:5s}', '{speed_l:4.0f}l',
+                      '{speed_r:4.0f}r']
 
     @property
     def brake_text(self):

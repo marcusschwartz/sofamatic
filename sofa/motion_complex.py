@@ -36,8 +36,8 @@ def controller_selector(joystick):
 
 class ControllerStatus(status.Status):
     _attrs = ['mode', 'submode', 'motor_l', 'motor_r']
-    _dashboard_fmt = ['{mode:8s}', '{submode:5s}', '{motor_l:3.0f}l',
-                      '{motor_r:3.0f}r']
+    _dashboard_fmt = ['{mode:8s}', '{submode:5s}', '{motor_l:4.0f}l',
+                      '{motor_r:4.0f}r']
 
 
 class ComplexMotionController(MotionController):
