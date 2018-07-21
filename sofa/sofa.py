@@ -22,9 +22,14 @@ class SofaStatus(status.Status):
     _attrs = ['receiver', 'roboteq', 'controller']
     _dashboard_fmt = ['{controller} |',
                       '{0.receiver.remote.joystick.dashboard} |',
-                      '{roboteq} |', '{receiver} |', '{0.receiver.remote.dashboard}']
-    _remote_parked_fmt = ['{0.roboteq.energy.watt_hours:3.1f}wh {0.roboteq.energy.volts:4.1f}v {0.receiver.signal_strength:3d}%~**PARKING BRAKE**']
-    _remote_idle_fmt = ['{0.roboteq.energy.watt_hours:3.1f}wh {0.roboteq.energy.volts:4.1f}v {0.receiver.signal_strength:3d}%~']
+                      '{roboteq} |', '{receiver} |',
+                      '{0.receiver.remote.dashboard}']
+    _remote_parked_fmt = ['{0.roboteq.energy.watt_hours:3.1f}wh',
+                          '{0.roboteq.energy.volts:4.1f}v',
+                          '{0.receiver.signal_strength:3d}%~**PARKING BRAKE**']
+    _remote_idle_fmt = ['{0.roboteq.energy.watt_hours:3.1f}wh',
+                        '{0.roboteq.energy.volts:4.1f}v',
+                        '{0.receiver.signal_strength:3d}%~']
 
 
 class Sofa(object):

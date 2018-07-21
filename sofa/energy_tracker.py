@@ -26,10 +26,10 @@ class EnergyTracker(object):
     def update(self, volts, amps_l, amps_r):
         now = time.time()
 
-	self._volts = volts
-	self._amps_l = amps_l
+        self._volts = volts
+        self._amps_l = amps_l
 
-	self._amps_r = amps_r
+        self._amps_r = amps_r
         watts = volts * (amps_l + amps_r)
         duration = self._last_update_ts - now
         current_watt_hours = watts * (duration / 3600)

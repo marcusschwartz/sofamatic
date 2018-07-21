@@ -39,7 +39,7 @@ class RemoteControl(object):
         if self._status.update_age and status_update == self._last_status_update:
             return
         self._last_status_update = status_update
-        
+
         self._sock.sendto(status_update, self._addr)
 
 #    """

@@ -18,7 +18,7 @@ class ReceiverStatus(status.Status):
 
     @property
     def signal_strength(self):
-    	return 100 - self[4]
+        return 100 - self[4]
 
 
 class RemoteControlReceiver(object):
@@ -38,11 +38,11 @@ class RemoteControlReceiver(object):
         self._sock.bind((addr, port))
         self._sock.setblocking(0)
         self._remote = remote.RemoteControl(
-	    None, self._sock,
-	    remote.RemoteControlStatus(updated=0,
-				       joystick=joystick.new_centered(),
-				       avg_duty_cycle=0,
-				       max_duty_cycle=0))
+            None, self._sock,
+            remote.RemoteControlStatus(updated=0,
+                                       joystick=joystick.new_centered(),
+                                       avg_duty_cycle=0,
+                                       max_duty_cycle=0))
 
     @property
     def remote(self):
@@ -91,7 +91,7 @@ class RemoteControlReceiver(object):
             remote_status = remote.RemoteControlStatus(
                 updated=updated,
                 joystick=_joystick,
-	        avg_duty_cycle=int(avg_duty_cycle),
-	        max_duty_cycle=int(max_duty_cycle))
+                avg_duty_cycle=int(avg_duty_cycle),
+                max_duty_cycle=int(max_duty_cycle))
 
             self._remote = remote.RemoteControl(addr, self._sock, remote_status)

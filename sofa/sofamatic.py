@@ -9,7 +9,6 @@ from sofa import Sofa
 
 
 def shutdown(status_path):
-    return
     try:
         os.unlink(status_path)
     except BaseException:
