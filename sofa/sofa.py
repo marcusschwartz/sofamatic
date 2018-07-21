@@ -11,6 +11,7 @@
   roboteq.
 """
 import json
+import time
 
 import motion_complex
 import receiver
@@ -19,7 +20,7 @@ import status
 
 
 class SofaStatus(status.Status):
-    _attrs = ['receiver', 'roboteq', 'controller']
+    _attrs = ['receiver', 'roboteq', 'controller', 'timestamp', 'runtime']
     _dashboard_fmt = ['{controller} |',
                       '{0.receiver.remote.joystick.dashboard} |',
                       '{roboteq} |', '{receiver} |',
@@ -40,13 +41,17 @@ class Sofa(object):
         self._receiver = receiver.RemoteControlReceiver(addr=addr, port=int(port))
         self._roboteq = roboteq.Roboteq(path=roboteq_path)
         self._controller = motion_complex.ComplexMotionController()
+	self._start_ts = time.time()
 
     @property
     def status(self):
+    	now = time.time()
         return SofaStatus(
             receiver=self._receiver.status,
             roboteq=self._roboteq.status,
             controller=self._controller.status,
+	    timestamp=now,
+	    runtime=now - self._start_ts,
         )
 
     def _update_status(self):
