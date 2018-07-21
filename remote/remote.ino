@@ -193,11 +193,12 @@ bool validate_nunchuk(ArduinoNunchuk nunchuk) {
   return true;
 }
 
-void send_packet(int status_age) {
+void send_packet(int status_age, unsigned int duty_cycle) {
   char packet[100];
   nunchuk.update();
   if (validate_nunchuk(nunchuk)) {
-    sprintf(packet, "%03d:%03d:%1d:%1d:%d", nunchuk.analogX, nunchuk.analogY, nunchuk.zButton,nunchuk.cButton, status_age);
+    sprintf(packet, "%03d:%03d:%1d:%1d:%d:%d:%d", nunchuk.analogX, nunchuk.analogY, 
+            nunchuk.zButton,nunchuk.cButton, status_age, duty_cycle, duty_cycle);
     //udp.beginPacketMulticast(SOFAMATIC_GRP, SOFA_PORT, WiFi.localIP(), 1);
     udp.beginPacket(SOFA_ADDR, SOFA_PORT);
     udp.write(packet);
@@ -205,7 +206,7 @@ void send_packet(int status_age) {
   }
 }
 
-void sleep_a_while() {
+unsigned int sleep_a_while() {
   unsigned long now = millis();
   unsigned long loop_delay = now - last_millis;
   Serial.print("loop delay ");
@@ -213,7 +214,9 @@ void sleep_a_while() {
   if (loop_delay < PACKET_INTERVAL) {
     delay(PACKET_INTERVAL - loop_delay);
   }
+  unsigned int duty_cycle = (100 * loop_delay) / PACKET_INTERVAL;
   last_millis = millis();
+  return(duty_cycle);
 }
 
 void setup() {
@@ -239,11 +242,11 @@ void loop() {
   }
 
   // sleep for a bit if necessary
-  sleep_a_while();
+  unsigned int duty_cycle = sleep_a_while();
 
   // send another data packet
   if (last_status_update > 0) {
     status_age = now - last_status_update;
   }
-  send_packet(status_age);
+  send_packet(status_age, duty_cycle);
 }
