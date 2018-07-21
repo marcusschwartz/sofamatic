@@ -37,7 +37,10 @@ class Status(tuple):
                 attrs[attr] = self[i]
             i += 1
         args = [self]
-        return " ".join(fmt).format(*args, **attrs)
+        try:
+            return " ".join(fmt).format(*args, **attrs)
+        except AttributeError as exc:
+            raise RuntimeError(exc)
 
     def __getattr__(self, attr):
         i = 0
@@ -45,7 +48,7 @@ class Status(tuple):
             if attr == defined_attr:
                 return self[i]
             i += 1
-        raise AttributeError(attr)
+        raise AttributeError("%s not found in %s" % (attr, self))
 
     def __dict__(self):
         return self.as_dict

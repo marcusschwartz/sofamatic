@@ -20,7 +20,9 @@ import status
 
 class SofaStatus(status.Status):
     _attrs = ['receiver', 'roboteq', 'controller']
-    _dashboard_fmt = ['{controller} | {roboteq} | {receiver}']
+    _dashboard_fmt = ['{controller} |',
+                      '{0.receiver.remote.joystick.dashboard} |',
+                      '{roboteq} |', '{receiver}']
 
 
 class Sofa(object):
