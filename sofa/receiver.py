@@ -11,8 +11,10 @@ import status
 
 
 class ReceiverStatus(status.Status):
-    _attrs = ['duty_cycle', 'interval', 'jitter', 'packet_loss', 'remote']
-    _dashboard_fmt = ['{duty_cycle:2d}%', '{interval:3d}ms', '{jitter:2d}ms', '{packet_loss:3d}%']
+    _attrs = ['avg_duty_cycle', 'max_duty_cycle', 'interval', 'jitter',
+              'packet_loss', 'remote']
+    _dashboard_fmt = ['{avg_duty_cycle:2d}%', '{max_duty_cycle:2d}%',
+                      '{interval:3d}ms', '{jitter:2d}ms', '{packet_loss:3d}%']
 
 
 class RemoteControlReceiver(object):
@@ -39,8 +41,10 @@ class RemoteControlReceiver(object):
 
     @property
     def status(self):
-        duty_cycle, interval, jitter, packet_loss = self._packet_history.summary
-        return ReceiverStatus(duty_cycle=duty_cycle,
+        (avg_duty_cycle, max_duty_cycle, interval,
+         jitter, packet_loss) = self._packet_history.summary
+        return ReceiverStatus(avg_duty_cycle=avg_duty_cycle,
+                              max_duty_cycle=max_duty_cycle,
                               interval=interval,
                               jitter=jitter,
                               packet_loss=packet_loss,

@@ -51,7 +51,8 @@ class Sofa(object):
     def _update_status_file(self, _status):
         if not self._status_path:
             return
-        json.dump(_status.as_dict, open(self._status_path, "w"))
+        json.dump(_status.as_dict, open(self._status_path, "w"),
+                  sort_keys=True, indent=4, separators=(',', ': '))
 
     def run(self):
         while True:

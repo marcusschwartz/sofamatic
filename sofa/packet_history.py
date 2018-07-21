@@ -18,7 +18,7 @@ class PacketHistory(collections.deque):
     @property
     def summary(self):
         if len(self) < 2:
-            return 0, 0, 0, 0
+            return 0, 0, 0, 0, 0
 
         cycle_time_total = 0
         cycle_time_max = 0
@@ -49,4 +49,8 @@ class PacketHistory(collections.deque):
             jitter_total += abs((timestamp - last_timestamp) - interval_avg)
             last_timestamp = timestamp
 
-        return int(100 * (cycle_time / records) / self._interval), int(1000 * interval_total / records), int(1000 * jitter_total / records), int(100 * missing_total / records)
+        return tuple((int(100 * (cycle_time / records) / self._interval),
+                      int(100 * cycle_time_max / self._interval),
+                      int(1000 * interval_total / records),
+                      int(1000 * jitter_total / records),
+                      int(100 * missing_total / records)))
