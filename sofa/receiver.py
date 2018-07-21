@@ -37,7 +37,12 @@ class RemoteControlReceiver(object):
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._sock.bind((addr, port))
         self._sock.setblocking(0)
-        self._remote = remote.RemoteControl(None, self._sock, joystick.new_centered(), 1)
+        self._remote = remote.RemoteControl(
+	    None, self._sock,
+	    remote.RemoteControlStatus(updated=0,
+				       joystick=joystick.new_centered(),
+				       avg_duty_cycle=0,
+				       max_duty_cycle=0))
 
     @property
     def remote(self):
@@ -76,7 +81,17 @@ class RemoteControlReceiver(object):
         self._packet_history.add(now, cycle_time, received_packets)
 
         if data:
-            raw_x, raw_y, raw_z, raw_c, status_age = data.split(':')
+            raw_x, raw_y, raw_z, raw_c, status_age, avg_duty_cycle, max_duty_cycle = data.split(':')
             _joystick = nunchuk_joystick.from_remote_nunchuk(
                 raw_x, raw_y, raw_z, raw_c, now)
-            self._remote = remote.RemoteControl(addr, self._sock, _joystick, status_age)
+            if int(status_age) < 0:
+                updated = 0
+            else:
+                updated = time.time() - float(int(status_age) / 1000)
+            remote_status = remote.RemoteControlStatus(
+                updated=updated,
+                joystick=_joystick,
+	        avg_duty_cycle=int(avg_duty_cycle),
+	        max_duty_cycle=int(max_duty_cycle))
+
+            self._remote = remote.RemoteControl(addr, self._sock, remote_status)

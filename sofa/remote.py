@@ -6,7 +6,8 @@ import status
 
 
 class RemoteControlStatus(status.Status):
-    _attrs = ['joystick', 'updated']
+    _attrs = ['joystick', 'updated', 'avg_duty_cycle', 'max_duty_cycle']
+    _dashboard_fmt = ['{avg_duty_cycle:3d}%', '{max_duty_cycle:3d}%max']
 
     @property
     def update_age(self):
@@ -14,16 +15,11 @@ class RemoteControlStatus(status.Status):
 
 
 class RemoteControl(object):
-    def __init__(self, addr, sock, joystick, status_update_age):
-        self._joystick = joystick
+    def __init__(self, addr, sock, _status):
         self._addr = addr
-	self._sock = sock
-        if int(status_update_age) < 0:
-            self._last_status_update_ts = 0
-        else:
-            self._last_status_update_ts = time.time() - float(
-                    int(status_update_age) / 1000)
-        self._last_status_update = ''
+        self._sock = sock
+        self._status = _status
+        self._last_status_update = 0
 
     @property
     def addr(self):
@@ -31,23 +27,18 @@ class RemoteControl(object):
 
     @property
     def joystick(self):
-        return self._joystick
+        return self._status.joystick
 
     @property
     def status(self):
-        return RemoteControlStatus(
-            updated=self._last_status_update_ts,
-            joystick=self._joystick)
+        return self._status
 
     def update_status(self, status_update):
         if not self._addr:
             return
-        now = time.time()
-	age = now - self._last_status_update_ts
-        if age < 1.0 and status_update == self._last_status_update:
+        if self._status.update_age and status_update == self._last_status_update:
             return
         self._last_status_update = status_update
-	self._last_status_update_ts = now
         
         self._sock.sendto(status_update, self._addr)
 
