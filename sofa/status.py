@@ -41,6 +41,8 @@ class Status(tuple):
             return " ".join(fmt).format(*args, **attrs)
         except AttributeError as exc:
             raise RuntimeError(exc)
+        except ValueError as exc:
+            raise RuntimeError("%s [%s]" % (exc, fmt))
 
     def __getattr__(self, attr):
         i = 0
