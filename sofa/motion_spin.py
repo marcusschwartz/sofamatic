@@ -14,15 +14,17 @@ class SpinMC(MotionController):
     _direction = "NONE"
     _turn_speed = 0
 
+    @property
     def active(self):
         if self._turn_speed > 0:
             return True
         return False
 
+    @property
     def submode(self):
         return self._direction
 
-    def process_update(self):
+    def _process_update(self):
         direction = None
         turn_speed = 0
 
@@ -50,10 +52,11 @@ class SpinMC(MotionController):
         self._direction = direction
         self._turn_speed = process_accel(turn_speed, self._turn_speed, 'SPIN')
 
+    @property
     def motor_speeds(self):
         turn_speed = self._turn_speed
 
-        # XXX doesn't switch directions with accel properly
+        # TODO doesn't switch directions with accel properly
         if self._direction == 'LEFT':
             return turn_speed * -1.0 * MAX_SPEED, turn_speed * MAX_SPEED
         if self._direction == 'RIGHT':

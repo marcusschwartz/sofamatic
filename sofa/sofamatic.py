@@ -9,7 +9,7 @@ from sofa import Sofa
 
 
 def shutdown(status_path):
-    """remove any evidence of our running"""
+    return
     try:
         os.unlink(status_path)
     except BaseException:

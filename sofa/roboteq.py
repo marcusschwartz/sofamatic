@@ -2,134 +2,78 @@
 import time
 import serial
 
-import util
-
-ACCEL_LIMIT = [
-    [0, 99, 200],
-    [100, 1000, 400],
-]
+import accel_limit
+import energy_tracker
+import status
 
 
-def gen_accel_table(table_def):
-    """generate an acceleration table"""
-    table = []
-    for i in range(1001):
-        table.append(0)
-    for limit_def in table_def:
-        range_start, range_end, limit = limit_def
-        for i in range(range_start, range_end + 1):
-            table[i] = limit
+class RoboteqStatus(status.Status):
+    _attrs = ['energy', 'brake', 'speed_l', 'speed_r']
+    _dashboard_fmt = ['{energy:20s}', '{0.brake_text:5s}', '{speed_l:3.0f}l',
+                      '{speed_r:3.0f}r']
 
-    return table
+    @property
+    def brake_text(self):
+        if self.brake:
+            return 'BRAKE'
+        return ''
 
 
 class Roboteq(object):
     '''A roboteq RS232 motor controller with accel/deccel enforcement'''
+    _speed_l = 0
+    _speed_r = 0
+    _energy = energy_tracker.EnergyTracker()
+    _accel_limit = accel_limit.AccelerationLimiter()
 
     def __init__(self, path="/dev/ttyACM0", speed=115200):
         if path:
             self._roboteq = serial.Serial(path, speed, timeout=1)
         else:
             self._roboteq = None
-        self._m1_current = 0
-        self._m2_current = 0
         self._last_speed_ts = time.time()
 
-        self._accel_table = gen_accel_table(ACCEL_LIMIT)
-        self._decel_table = gen_accel_table(ACCEL_LIMIT)
+        self._poll_energy()
 
+    @property
     def status(self):
-        amps_l, amps_r = self.amps()
-        volts = self.volts()
-        watts = volts * (amps_l + amps_r)
-        brake_active = self.brake_active()
-        if brake_active:
-            brake = 'BRAKE'
-        else:
-            brake = ''
+        self._poll_energy()
 
-        status = util.Status()
-        status_fmt = "{:5s} {:4.1f}v ({:5.2f}v)  {:4.1f}a {:4.1f}a {:4d}w {:4d}l {:4d}r"
-        status.string = status_fmt.format(brake, volts, volts / 3, amps_l, amps_r, int(watts),
-                                          self._m1_current, self._m2_current)
-        status.details = {
-            "volts": volts,
-            "volts_12": volts / 3,
-            "amps_l": amps_l,
-            "amps_r": amps_r,
-            "watts": watts,
-            "brake": brake_active,
-        }
+        return RoboteqStatus(
+            brake=self.brake_active,
+            energy=self._energy.status,
+            speed_l=self._speed_l,
+            speed_r=self._speed_r)
 
-        return status
+    def _poll_energy(self):
+        if self._roboteq is None:
+            return
+        volts = self.roboteq_exec("?V")[2:]
+        amps = self.roboteq_exec("?BA")[3:]
 
-    def process_accel(self, target, current, delay):
-        '''foo'''
+        volts = float(volts.split(':')[1]) / 10
+        amps_l = float(amps.split(':')[1]) / 10
+        amps_r = float(amps.split(':')[0]) / 10
 
-        target = int(target)
+        self._energy.update(volts, amps_l, amps_r)
 
-        # never reverse speed in a single pass
-        if (target > 0 and current < 0) or (target < 0 and current > 0):
-            target = 0
-
-        change = abs(target) - abs(current)
-
-        if change > 0:
-            limit = int(self._accel_table[abs(int(current))] * delay)
-            if limit < change:
-                # print "LIMIT ACCEL {} -> {}".format(change, limit)
-                change = limit
-            if target < current:
-                change *= -1
-        elif change < 0:
-            limit = int(self._decel_table[abs(int(current))] * delay)
-            if limit < abs(change):
-                # print "LIMIT DECEL {} -> {}".format(abs(change), limit)
-                change = -1 * limit
-            if target > current:
-                change *= -1
-
-        current += change
-
-        return current
-
-    def set_speed(self, m1_target, m2_target):
+    def set_speed(self, speed_l, speed_r):
         '''set the speed of both motors'''
 
         now = time.time()
         delay = now - self._last_speed_ts
         self._last_speed_ts = now
 
-        self._m1_current = self.process_accel(m1_target,
-                                              self._m1_current,
-                                              delay)
-        self._m2_current = self.process_accel(m2_target,
-                                              self._m2_current,
-                                              delay)
+        self._speed_l = self._accel_limit.limit(speed_l, self._speed_l, delay)
+        self._speed_r = self._accel_limit.limit(speed_r, self._speed_r, delay)
 
         if self._roboteq is None:
             return
 
-        self.roboteq_exec("!G 1 {}".format(-1 * int(self._m1_current)))
-        self.roboteq_exec("!G 2 {}".format(int(self._m2_current)))
+        self.roboteq_exec("!G 1 {}".format(-1 * int(self._speed_l)))
+        self.roboteq_exec("!G 2 {}".format(int(self._speed_r)))
 
-    def volts(self):
-        '''return the current battery voltage'''
-        if self._roboteq is None:
-            return 0
-        volts = self.roboteq_exec("?V")[2:]
-        volts = float(volts.split(':')[1]) / 10
-        return volts
-
-    def amps(self):
-        '''return the two motor amperages'''
-        if self._roboteq is None:
-            return 0, 0 
-        amps = self.roboteq_exec("?BA")[3:]
-        m1_amps = float(amps.split(':')[1]) / 10
-        m2_amps = float(amps.split(':')[0]) / 10
-        return m1_amps, m2_amps
-
+    @property
     def brake_active(self):
         '''return true if the emergency brake is active.'''
         if self._roboteq is None:

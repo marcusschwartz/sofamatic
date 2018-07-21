@@ -57,24 +57,28 @@ class MotionController(object):
     _name = ""
     _joystick = None
 
+    @property
     def name(self):
         return self._name
 
-    def process_update(self):
+    def _process_update(self):
         pass
 
-    def update_joystick(self, new_joystick):
-        self._joystick = new_joystick
-        self.process_update()
+    def update_joystick(self, joystick):
+        self._joystick = joystick
+        self._process_update()
 
+    @property
     def status(self):
-        return self.name()
+        return self.name
 
+    @property
     def active(self):
         if not self._joystick.valid:
-	    return False
+            return False
         return not self._joystick.centered
 
+    @property
     def motor_speeds(self):
         if self._joystick.centered:
             return 0.0, 0.0

@@ -35,9 +35,11 @@ class NormalMC(MotionController):
     _max_speed = 0.0
     _speed = 0.0
 
+    @property
     def submode(self):
         return self._submode
 
+    @property
     def active(self):
         if self._speed > 0 and (self._l_speed != 0 or self._r_speed != 0):
             return True
@@ -113,7 +115,7 @@ class NormalMC(MotionController):
 
         return max_speed
 
-    def process_update(self):
+    def _process_update(self):
         turn_direction, turn_angle = self.decode_turn()
 
         self._submode, m1_speed, m2_speed, accel_profile = self.decode_submode(turn_angle)
@@ -141,6 +143,7 @@ class NormalMC(MotionController):
             self._l_speed = process_accel(speed, self._l_speed, accel_profile)
             self._r_speed = process_accel(speed, self._r_speed, accel_profile)
 
+    @property
     def motor_speeds(self):
         left_motor = math.sqrt(self._l_speed * self._speed) * self._max_speed
         right_motor = math.sqrt(self._r_speed * self._speed) * self._max_speed

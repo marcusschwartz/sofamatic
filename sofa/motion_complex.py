@@ -1,9 +1,9 @@
 """a meta motion controller that combines several others"""
+from motion import MotionController
 from motion_normal import ForwardMC, ReverseMC
 from motion_spin import SpinMC
 from motion_crawl import CrawlMC
-
-import util
+import status
 
 
 def controller_selector(joystick):
@@ -34,67 +34,69 @@ def controller_selector(joystick):
     return None
 
 
-class ComplexMotionController(object):
+class ControllerStatus(status.Status):
+    _attrs = ['mode', 'submode', 'motor_l', 'motor_r']
+    _dashboard_fmt = ['{mode:8s}', '{submode:5s}', '{motor_l:3.0f}l',
+                      '{motor_r:3.0f}r']
+
+
+class ComplexMotionController(MotionController):
     _controller = None
     _online = False
-    _missed_data = 0
 
+    @property
     def name(self):
         if not self._online:
             return 'OFFLINE'
 
         if self._controller:
-            return self._controller.name()
+            return self._controller.name
 
         return 'IDLE'
 
+    @property
     def status(self):
-        motor_l, motor_r = self.motor_speeds()
-        status = util.Status()
-        status.string = "{:10s} {:8s} {:6.1f}L {:6.1f}R".format(
-            self.name(), self.submode(), motor_l, motor_r)
-        status.details = {
-            'mode': self.name(),
-            'submode': self.submode(),
-            'motor_l': motor_l,
-            'motor_r': motor_r,
-        }
+        motor_l, motor_r = self.motor_speeds
+        return ControllerStatus(
+            mode=self.name,
+            submode=self.submode,
+            motor_l=motor_l,
+            motor_r=motor_r)
 
-        return status
-
+    @property
     def submode(self):
         if self._controller:
-            return self._controller.submode()
+            return self._controller.submode
         return ""
 
-    def update_joystick(self, joystick):
-        if joystick.valid:
-            self._missed_data = 0
+    def _process_update(self):
+        # if we haven't heard from the remote in a while, go offline
+        if not self._joystick.valid:
+            self._online = False
+            self._controller = None
+            return
 
-            # only return online when the joystick is idle
-            if not self._online and joystick.centered:
-                self._online = True
+        # only return online when the joystick is centered
+        if not self._online and self._joystick.centered:
+            self._online = True
 
-            # if a controller isn't running, see if one should be:
-            if self._online and not self._controller \
-               and not joystick.centered:
-                self._controller = controller_selector(joystick)
-        else:
-            # we don't have a valid joystick, prepare to go offline
-            self._missed_data += 1
-            if self._missed_data > 3:
-                self._online = False
-                self._controller = None
+        # if a controller isn't running, see if one should be:
+        if self._online and not self._controller and not self._joystick.centered:
+            self._controller = controller_selector(self._joystick)
+
+        if not self._controller:
+            return
+
+        # if the existing controller is idle, kill it
+        if not self._controller.active() and self._joystick.centered:
+            self._controller = None
 
         if self._controller:
-            self._controller.update_joystick(joystick)
+            self._controller.update_joystick(self._joystick)
 
-            # if the existing controller is idle, kill it
-            if not self._controller.active() and joystick.centered:
-                self._controller = None
-
+    @property
     def motor_speeds(self):
         if self._controller:
-            return self._controller.motor_speeds()
+            return self._controller.motor_speeds
 
         return 0.0, 0.0
