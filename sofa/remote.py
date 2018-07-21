@@ -17,7 +17,7 @@ class RemoteControl(object):
     def __init__(self, addr, joystick, status_update_age):
         self._joystick = joystick
         self._addr = addr
-        self._last_status_update = time.time() - status_update_age
+        self._last_status_update = time.time() - float(int(status_update_age) / 1000)
 
     @property
     def addr(self):
