@@ -43,7 +43,7 @@ class Joystick(status.Status):
 
     @property
     def centered(self):
-        if self.magnitude <= 10:
+        if self[0] <= 10:
             return True
         return False
 
