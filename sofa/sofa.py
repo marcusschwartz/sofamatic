@@ -62,6 +62,10 @@ class Sofa(object):
     def _update_status(self):
         _status = self.status
         self._update_status_file(_status)
+        self._receiver.remote.update_status(self._remote_status_string(_status))
+        print _status.dashboard
+
+    def _remote_status_string(self, _status):
         if self._roboteq.brake_active and self._receiver.remote.joystick.active:
             remote_status = '&PARKING~BRAKE'
         elif self._roboteq.brake_active:
@@ -77,8 +81,7 @@ class Sofa(object):
 	        remote_status = '&SPIN/~CRAWL'
 	    else:
                 remote_status = _status.remote_idle
-        self._receiver.remote.update_status(remote_status)
-        print _status.dashboard
+        return remote_status
 
     def _update_status_file(self, _status):
         if not self._status_path:
