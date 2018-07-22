@@ -31,6 +31,10 @@ class SofaStatus(status.Status):
     _remote_idle_fmt = ['{0.roboteq.energy.watt_hours:3.1f}wh',
                         '{0.roboteq.energy.volts:4.1f}v',
                         '{0.receiver.signal_strength:3d}%~']
+    _remote_active_fmt = ['{0.roboteq.energy.watt_hours:3.1f}wh',
+                         '{0.roboteq.energy.volts:4.1f}v',
+                         '{0.receiver.signal_strength:3d}%~{0.controller.mode:s}:{0.controller.submode:s}'
+                         '{0.roboteq.energy.watts:5.1f}w']
 
 
 class Sofa(object):
@@ -41,24 +45,28 @@ class Sofa(object):
         self._receiver = receiver.RemoteControlReceiver(addr=addr, port=int(port))
         self._roboteq = roboteq.Roboteq(path=roboteq_path)
         self._controller = motion_complex.ComplexMotionController()
-	self._start_ts = time.time()
+        self._start_ts = time.time()
 
     @property
     def status(self):
-    	now = time.time()
+        now = time.time()
         return SofaStatus(
             receiver=self._receiver.status,
             roboteq=self._roboteq.status,
             controller=self._controller.status,
-	    timestamp=now,
-	    runtime=now - self._start_ts,
+            timestamp=now,
+            runtime=now - self._start_ts,
         )
 
     def _update_status(self):
         _status = self.status
         self._update_status_file(_status)
-        if self._roboteq.brake_active:
+        if self._roboteq.brake_active and self._receiver.remote.joystick.active:
+            remote_status = '&PARKING~BRAKE'
+        elif self._roboteq.brake_active:
             remote_status = _status.remote_parked
+        elif self._receiver.remote.joystick.active:
+            remote_status = _status.remote_active
         else:
             remote_status = _status.remote_idle
         self._receiver.remote.update_status(remote_status)

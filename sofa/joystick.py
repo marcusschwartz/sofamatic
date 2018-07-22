@@ -47,6 +47,10 @@ class Joystick(status.Status):
             return True
         return False
 
+    @property
+    def active(self):
+        return self.magnitude > 0
+
 
 def new_centered(last_joystick=None):
     if last_joystick:
