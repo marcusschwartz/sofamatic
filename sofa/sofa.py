@@ -34,7 +34,7 @@ class SofaStatus(status.Status):
                         '{0.receiver.signal_strength:3d}%~']
     _remote_active_fmt = ['&{0.controller.mode}:{0.controller.submode}'
                           '~{0.controller.throttle_pct:3d}%',
-                          '{0.roboteq.energy.watts:5.1f}w']
+                          '{0.roboteq.energy.watts:3.0f}w']
 
 class Sofa(object):
 
