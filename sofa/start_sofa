@@ -6,6 +6,6 @@ $BASE/stop_sofa
 
 oled-exp -i -c write "Starting sofa.py..."
 echo Starting sofa.py... > /var/run/sofa_status
-$BASE/sofa_display.py >/dev/null &
+#$BASE/sofa_display.py >/dev/null &
 $BASE/babysit_sofamatic.sh >/dev/null &
 exit 0
