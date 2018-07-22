@@ -32,11 +32,12 @@ class SofaStatus(status.Status):
     _remote_idle_fmt = ['{0.roboteq.energy.watt_hours:3.1f}wh',
                         '{0.roboteq.energy.volts:4.1f}v',
                         '{0.receiver.signal_strength:3d}%~'
-			'{0.roboteq.min_temp:d-{0.roboteq.max_temp:d}F',
-			'{0.roboteq.energy.regen_watt_hours:-6.2f}whr']
+                        '{0.roboteq.min_temp:d-{0.roboteq.max_temp:d}F',
+                        '{0.roboteq.energy.regen_watt_hours:-6.2f}whr']
     _remote_active_fmt = ['&{0.controller.mode}:{0.controller.submode}'
                           '~{0.controller.throttle_pct:3d}%',
                           '{0.roboteq.energy.watts:3.0f}w']
+
 
 class Sofa(object):
 
@@ -73,13 +74,13 @@ class Sofa(object):
         elif self._controller.active:
             remote_status = _status.remote_active
         else:
-	    if self._receiver.remote.joystick.button_z and self._receiver.remote.joystick.button_c:
-	        remote_status = '&WOAH!!'
-	    elif self._receiver.remote.joystick.button_z:
-	        remote_status = '&TURBO'
-	    elif self._receiver.remote.joystick.button_c:
-	        remote_status = '&SPIN/~CRAWL'
-	    else:
+            if self._receiver.remote.joystick.button_z and self._receiver.remote.joystick.button_c:
+                remote_status = '&WOAH!!'
+            elif self._receiver.remote.joystick.button_z:
+                remote_status = '&TURBO'
+            elif self._receiver.remote.joystick.button_c:
+                remote_status = '&SPIN/~CRAWL'
+            else:
                 remote_status = _status.remote_idle
         return remote_status
 

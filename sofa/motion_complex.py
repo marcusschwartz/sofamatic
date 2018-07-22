@@ -41,7 +41,8 @@ class ControllerStatus(status.Status):
 
     @property
     def throttle_pct(self):
-            return int((abs(self[2]) + abs(self[3])) / 2) / 10
+        return int((abs(self[2]) + abs(self[3])) / 2) / 10
+
 
 class ComplexMotionController(MotionController):
     _controller = None

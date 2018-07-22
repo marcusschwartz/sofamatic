@@ -34,7 +34,6 @@ class EnergyTracker(object):
 
         watts = volts * (amps_l + amps_r)
         current_watt_hours = watts * (duration / 3600)
-	#print "duration %s volts %s amps %s %s watts %s wh %s" % (duration, self._volts, self._amps_l, self._amps_r, watts, current_watt_hours)
         if current_watt_hours > 0:
             self._watt_hours += current_watt_hours
         else:

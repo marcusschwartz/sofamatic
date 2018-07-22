@@ -3,7 +3,6 @@ import select
 import socket
 import time
 
-import joystick
 import nunchuk_joystick
 import packet_history
 import remote
