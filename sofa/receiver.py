@@ -37,12 +37,7 @@ class RemoteControlReceiver(object):
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._sock.bind((addr, port))
         self._sock.setblocking(0)
-        self._remote = remote.RemoteControl(
-            None, self._sock,
-            remote.RemoteControlStatus(updated=0,
-                                       joystick=joystick.new_centered(),
-                                       avg_duty_cycle=0,
-                                       max_duty_cycle=0))
+        self._remote = remote.RemoteControl(None, self._sock)
 
     @property
     def remote(self):
@@ -87,11 +82,12 @@ class RemoteControlReceiver(object):
             if int(status_age) < 0:
                 updated = 0
             else:
-                updated = time.time() - float(int(status_age) / 1000)
+                updated = now - float(float(status_age) / 1000)
             remote_status = remote.RemoteControlStatus(
                 updated=updated,
                 joystick=_joystick,
                 avg_duty_cycle=int(avg_duty_cycle),
                 max_duty_cycle=int(max_duty_cycle))
 
-            self._remote = remote.RemoteControl(addr, self._sock, remote_status)
+            self._remote.set_status(remote_status)
+            self._remote.set_addr(addr)

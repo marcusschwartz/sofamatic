@@ -2,6 +2,7 @@
 
 import time
 
+import joystick
 import status
 
 
@@ -15,11 +16,14 @@ class RemoteControlStatus(status.Status):
 
 
 class RemoteControl(object):
-    def __init__(self, addr, sock, _status):
+    def __init__(self, addr, sock):
         self._addr = addr
         self._sock = sock
-        self._status = _status
         self._last_status_update = 0
+        self._status = RemoteControlStatus(updated=0,
+                                           joystick=joystick.new_centered(),
+                                           avg_duty_cycle=0,
+                                           max_duty_cycle=0)
 
     @property
     def addr(self):
@@ -33,10 +37,16 @@ class RemoteControl(object):
     def status(self):
         return self._status
 
+    def set_addr(self, addr):
+        self._addr = addr
+
+    def set_status(self, _status):
+        self._status = _status
+
     def update_status(self, status_update):
         if not self._addr:
             return
-        if self._status.update_age and status_update == self._last_status_update:
+        if self._status.update_age < 1 and status_update == self._last_status_update:
             return
         self._last_status_update = status_update
 
