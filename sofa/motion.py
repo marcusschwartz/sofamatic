@@ -74,6 +74,8 @@ class MotionController(object):
 
     @property
     def active(self):
+        if not self._joystick:
+            return False
         if not self._joystick.valid:
             return False
         return not self._joystick.centered
