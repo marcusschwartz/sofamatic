@@ -1,3 +1,3 @@
 #!/bin/sh
 
-kill -TERM `pidof babysit_sofamatic.sh` `pidof sofamatic.py` `pidof sofa_display.py`
+kill -TERM `pidof babysit_sofamatic.sh` `pidof sofamatic.py` 
