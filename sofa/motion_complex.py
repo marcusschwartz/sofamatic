@@ -39,6 +39,9 @@ class ControllerStatus(status.Status):
     _dashboard_fmt = ['{mode:8s}', '{submode:5s}', '{motor_l:4.0f}l',
                       '{motor_r:4.0f}r']
 
+    @property
+    def throttle_pct(self):
+            return int((abs(self[2]) + abs(self[3])) / 2) / 10
 
 class ComplexMotionController(MotionController):
     _controller = None
@@ -93,6 +96,12 @@ class ComplexMotionController(MotionController):
 
         if self._controller:
             self._controller.update_joystick(self._joystick)
+
+    @property
+    def active(self):
+        if self._controller:
+            return self._controller.active
+        return False
 
     @property
     def motor_speeds(self):

@@ -27,15 +27,14 @@ class SofaStatus(status.Status):
                       '{0.receiver.remote.dashboard}']
     _remote_parked_fmt = ['{0.roboteq.energy.watt_hours:3.1f}wh',
                           '{0.roboteq.energy.volts:4.1f}v',
-                          '{0.receiver.signal_strength:3d}%~**PARKING BRAKE**']
+                          '{0.receiver.signal_strength:3d}%'
+                          '~**PARKING BRAKE**']
     _remote_idle_fmt = ['{0.roboteq.energy.watt_hours:3.1f}wh',
                         '{0.roboteq.energy.volts:4.1f}v',
                         '{0.receiver.signal_strength:3d}%~']
-    _remote_active_fmt = ['{0.roboteq.energy.watt_hours:3.1f}wh',
-                         '{0.roboteq.energy.volts:4.1f}v',
-                         '{0.receiver.signal_strength:3d}%~{0.controller.mode:s}:{0.controller.submode:s}'
-                         '{0.roboteq.energy.watts:5.1f}w']
-
+    _remote_active_fmt = ['&{0.controller.mode}:{0.controller.submode}'
+                          '~{0.controller.throttle_pct:3d}%',
+                          '{0.roboteq.energy.watts:5.1f}w']
 
 class Sofa(object):
 
@@ -65,10 +64,17 @@ class Sofa(object):
             remote_status = '&PARKING~BRAKE'
         elif self._roboteq.brake_active:
             remote_status = _status.remote_parked
-        elif self._receiver.remote.joystick.active:
+        elif self._controller.active:
             remote_status = _status.remote_active
         else:
-            remote_status = _status.remote_idle
+	    if self._receiver.remote.joystick.button_z and self._receiver.remote.joystick.button_c:
+	        remote_status = '&WOAH!!'
+	    elif self._receiver.remote.joystick.button_z:
+	        remote_status = '&TURBO'
+	    elif self._receiver.remote.joystick.button_c:
+	        remote_status = '&SPIN/~CRAWL'
+	    else:
+                remote_status = _status.remote_idle
         self._receiver.remote.update_status(remote_status)
         print _status.dashboard
 
