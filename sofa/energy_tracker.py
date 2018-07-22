@@ -21,7 +21,7 @@ class EnergyTracker(object):
     _amps_r = 0
     _watt_hours = 0
     _regen_watt_hours = 0
-    _last_update_ts = 0
+    _last_update_ts = time.time()
 
     def update(self, volts, amps_l, amps_r):
         now = time.time()
