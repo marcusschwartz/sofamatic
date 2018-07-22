@@ -8,15 +8,19 @@ import status
 
 
 class RoboteqStatus(status.Status):
-    _attrs = ['energy', 'brake', 'speed_l', 'speed_r']
+    _attrs = ['energy', 'brake', 'speed_l', 'speed_r', 'temps']
     _dashboard_fmt = ['{energy:20s}', '{0.brake_text:5s}', '{speed_l:4.0f}l',
-                      '{speed_r:4.0f}r']
+                      '{speed_r:4.0f}r', '{0.max_temp:3d}F']
 
     @property
     def brake_text(self):
         if self.brake:
             return 'BRAKE'
         return ''
+
+    @property
+    def max_temp(self):
+        return max(self.temps)
 
 
 class Roboteq(object):
@@ -42,6 +46,7 @@ class Roboteq(object):
         return RoboteqStatus(
             brake=self.brake_active,
             energy=self._energy.status,
+            temps=self.temps,
             speed_l=self._speed_l,
             speed_r=self._speed_r)
 
@@ -80,6 +85,13 @@ class Roboteq(object):
             return False
         brake = int(self.roboteq_exec("?DI 6")[3:])
         return brake == 1
+
+    @property
+    def temps(self):
+        if self._roboteq is None:
+            return 0, 0, 0
+        temps = self.roboteq_exec("?T")[2:]
+        return [int((float(x) * 1.8) + 32.0) for x in temps.split(':')]
 
     def roboteq_exec(self, cmd):
         '''run a single serial command against the controller'''
