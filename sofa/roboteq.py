@@ -22,6 +22,10 @@ class RoboteqStatus(status.Status):
     def max_temp(self):
         return max(self.temps)
 
+    @property
+    def min_temp(self):
+        return min(self.temps)
+
 
 class Roboteq(object):
     '''A roboteq RS232 motor controller with accel/deccel enforcement'''
