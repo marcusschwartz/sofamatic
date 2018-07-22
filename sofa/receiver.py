@@ -32,7 +32,8 @@ class RemoteControlReceiver(object):
     _packet_history = packet_history.PacketHistory(INTERVAL)
 
     def __init__(self, addr="0.0.0.0", port=31337):
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        self._sock = socket.socket(
+            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._sock.bind((addr, port))
         self._sock.setblocking(0)
@@ -75,7 +76,8 @@ class RemoteControlReceiver(object):
         self._packet_history.add(now, cycle_time, received_packets)
 
         if data:
-            raw_x, raw_y, raw_z, raw_c, status_age, avg_duty_cycle, max_duty_cycle = data.split(':')
+            raw_x, raw_y, raw_z, raw_c, status_age, avg_duty_cycle, max_duty_cycle = data.split(
+                ':')
             _joystick = nunchuk_joystick.from_remote_nunchuk(
                 raw_x, raw_y, raw_z, raw_c, now)
             if int(status_age) < 0:

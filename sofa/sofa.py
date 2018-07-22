@@ -44,7 +44,8 @@ class Sofa(object):
     def __init__(self, roboteq_path, status_path, listen):
         self._status_path = status_path
         (addr, port) = listen.split(':')
-        self._receiver = receiver.RemoteControlReceiver(addr=addr, port=int(port))
+        self._receiver = receiver.RemoteControlReceiver(
+            addr=addr, port=int(port))
         self._roboteq = roboteq.Roboteq(path=roboteq_path)
         self._controller = motion_complex.ComplexMotionController()
         self._start_ts = time.time()
@@ -63,7 +64,8 @@ class Sofa(object):
     def _update_status(self):
         _status = self.status
         self._update_status_file(_status)
-        self._receiver.remote.update_status(self._remote_status_string(_status))
+        self._receiver.remote.update_status(
+            self._remote_status_string(_status))
         print _status.dashboard
 
     def _remote_status_string(self, _status):

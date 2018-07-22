@@ -118,7 +118,8 @@ class NormalMC(MotionController):
     def _process_update(self):
         turn_direction, turn_angle = self.decode_turn()
 
-        self._submode, m1_speed, m2_speed, accel_profile = self.decode_submode(turn_angle)
+        self._submode, m1_speed, m2_speed, accel_profile = self.decode_submode(
+            turn_angle)
 
         max_speed = self.max_speed(turn_angle)
 
@@ -131,14 +132,19 @@ class NormalMC(MotionController):
             accel_profile = 'TURBO'
 
         self._speed = process_accel(speed, self._speed, accel_profile)
-        self._max_speed = process_accel(max_speed, self._max_speed, accel_profile)
+        self._max_speed = process_accel(
+            max_speed, self._max_speed, accel_profile)
 
         if turn_direction == 'LEFT':
-            self._l_speed = process_accel(m2_speed, self._l_speed, accel_profile)
-            self._r_speed = process_accel(m1_speed, self._r_speed, accel_profile)
+            self._l_speed = process_accel(
+                m2_speed, self._l_speed, accel_profile)
+            self._r_speed = process_accel(
+                m1_speed, self._r_speed, accel_profile)
         elif turn_direction == 'RIGHT':
-            self._l_speed = process_accel(m1_speed, self._l_speed, accel_profile)
-            self._r_speed = process_accel(m2_speed, self._r_speed, accel_profile)
+            self._l_speed = process_accel(
+                m1_speed, self._l_speed, accel_profile)
+            self._r_speed = process_accel(
+                m2_speed, self._r_speed, accel_profile)
         else:
             self._l_speed = process_accel(speed, self._l_speed, accel_profile)
             self._r_speed = process_accel(speed, self._r_speed, accel_profile)
