@@ -45,6 +45,8 @@ unsigned long last_status_update = 0;
 byte spinner_position = (128 - spinner_logo_width) / 2;
 int spinner_direction = 3;
 
+byte sleep_mode = 0;
+
 void display_status_msg(String msg, int row, byte char_width, byte screen_chars, byte char_height) {
   int padding = (char_width * (screen_chars - msg.length())) / 2;
   oled.setCursor(padding,row * char_height);
@@ -118,9 +120,9 @@ void setup_nunchuk() {
 void setup_wifi() {
   // start wifi
   WiFi.mode(WIFI_STA); 
-  WiFi.begin("SofaMatic", "GoingPlaces");
-  //WiFi.begin("Poison Tree Frog", "DeltaZoonii");
-  //WiFi.begin("AndroidAP 420", "catalyst");
+  WiFi.begin("SofaMatic", "##");
+  //WiFi.begin("Poison Tree Frog", "##");
+  //WiFi.begin("AndroidAP 420", "##");
   while (WiFi.status() != WL_CONNECTED) {
     display_spinner();
     Serial.print(".");
@@ -198,7 +200,7 @@ void send_packet(int status_age, unsigned int duty_cycle) {
   nunchuk.update();
   if (validate_nunchuk(nunchuk)) {
     sprintf(packet, "%03d:%03d:%1d:%1d:%d:%d:%d", nunchuk.analogX, nunchuk.analogY, 
-            nunchuk.zButton,nunchuk.cButton, status_age, duty_cycle, duty_cycle);
+            nunchuk.zButton, nunchuk.cButton, status_age, duty_cycle, duty_cycle);
     //udp.beginPacketMulticast(SOFAMATIC_GRP, SOFA_PORT, WiFi.localIP(), 1);
     udp.beginPacket(SOFA_ADDR, SOFA_PORT);
     udp.write(packet);
@@ -209,8 +211,8 @@ void send_packet(int status_age, unsigned int duty_cycle) {
 unsigned int sleep_a_while() {
   unsigned long now = millis();
   unsigned long loop_delay = now - last_millis;
-  Serial.print("loop delay ");
-  Serial.println(loop_delay);
+  //Serial.print("loop delay ");
+  //Serial.println(loop_delay);
   if (loop_delay < PACKET_INTERVAL) {
     delay(PACKET_INTERVAL - loop_delay);
   }
@@ -232,10 +234,60 @@ void setup() {
   setup_wifi();
 }
 
+void process_interrupt() {
+  if (sleep_mode) {
+    sleep_mode = 0;
+  } else {
+    sleep_mode = 1;
+    oled.clearDisplay();
+    oled.display();
+  }
+}
+
+#define INTERRUPT_IGNORE_CYCLES 1
+#define INTERRUPT_TRIGGER_TRANSITIONS 8
+
+byte transition_count = 0;
+byte non_transition_count = 0;
+byte z_was_last_active = 0;
+
+void detect_button_interrupt() {
+  char debug[100];
+
+  if (nunchuk.zButton ^ nunchuk.cButton) {
+    non_transition_count = 0;
+    if ( (nunchuk.zButton && ! z_was_last_active) ||
+         (z_was_last_active && ! nunchuk.zButton) ) {
+      transition_count += 1;
+    }
+    z_was_last_active = nunchuk.zButton;
+  } else {
+    non_transition_count += 1;
+    if (non_transition_count > INTERRUPT_IGNORE_CYCLES) {
+      transition_count = 0;
+      non_transition_count = 0;
+      z_was_last_active = 0;
+    }
+  }
+
+  if (transition_count > INTERRUPT_TRIGGER_TRANSITIONS) {
+    process_interrupt();
+    transition_count = 0;
+    z_was_last_active = 0;
+  }
+}
+
 void loop() {
   // handle any status updates if available
   unsigned long now = millis();
   int status_age = -1;
+
+  if (sleep_mode) {
+    nunchuk.update();
+    detect_button_interrupt();
+    delay(PACKET_INTERVAL);
+    return;
+  }
   
   if (process_status_packet()) {
     last_status_update = now;
@@ -249,4 +301,7 @@ void loop() {
     status_age = now - last_status_update;
   }
   send_packet(status_age, duty_cycle);
+
+  // check for a button interrupt
+  detect_button_interrupt();
 }
