@@ -3,11 +3,18 @@
 
 #include "wifi.h"
 
-// max milliseconds between updates from sofa
+// after this many milliseconds with no updates from the
+// sofa, the spinner is displayed
 #define UPDATE_EXPIRATION 3000
 
+// after this many milliseconds with no updates from the
+// sofa, the remote goes into lock mode
+#define LOCK_MODE_TIMEOUT 20000
+
+// the port that this remote listens on
 #define REMOTE_PORT 31338
-//#define SOFAMATIC_GRP IPAddress(224, 0, 0, 250)
+
+// where to send data
 #define SOFA_ADDR IPAddress(192,168,  3,  1)
 #define SOFA_PORT 31337
 
@@ -33,6 +40,7 @@ void setup_network() {
   //udp.beginMulticast(WiFi.localIP(), SOFAMATIC_GRP, REMOTE_PORT);
   udp.begin(REMOTE_PORT);
 }
+
 bool process_status_packet() {
   char packet_buffer[2 * DISPLAY_WIDTH + 1];
   int packet_size = udp.parsePacket();
@@ -70,12 +78,15 @@ bool process_status_packet() {
     }
     return true;
   } else {
-    if ((millis() - last_update) > UPDATE_EXPIRATION) {
+    unsigned long update_age = millis() - last_update;
+    if (update_age > UPDATE_EXPIRATION) {
       display_spinner();
+    }
+    if (update_age > LOCK_MODE_TIMEOUT) {
+      enter_lock_mode();
     }
     return false;
   }
-  
 }
 
 void send_packet(int status_age, unsigned int duty_cycle) {
@@ -84,7 +95,6 @@ void send_packet(int status_age, unsigned int duty_cycle) {
   if (validate_nunchuk(nunchuk)) {
     sprintf(packet, "%03d:%03d:%1d:%1d:%d:%d:%d", nunchuk.analogX, nunchuk.analogY, 
             nunchuk.zButton, nunchuk.cButton, status_age, duty_cycle, duty_cycle);
-    //udp.beginPacketMulticast(SOFAMATIC_GRP, SOFA_PORT, WiFi.localIP(), 1);
     udp.beginPacket(SOFA_ADDR, SOFA_PORT);
     udp.write(packet);
     udp.endPacket();
