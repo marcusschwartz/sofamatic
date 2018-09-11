@@ -6,6 +6,8 @@
      /____/\____/_/  \__,_/_/  /_/\__,_/\__/_/\___/    
 ~~~
 
+![SofaMatic Image](img/sofamatic.jpg)
+
 ## Overview
 
 This code is used to control the motors that drive the SofaMatic, a
