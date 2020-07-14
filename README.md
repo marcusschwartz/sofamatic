@@ -35,7 +35,7 @@ wired to the I2C pins, along with an OLED display such as the
 ## The Sofa
 
 The [sofa/](https://github.com/marcusschwartz/sofamatic/tree/master/sofa)
-folder contains python code that can be run on any maychine with a Roboteq
+folder contains python code that can be run on any machine with a Roboteq
 motor controller attached to a serial port.  I used an
 [Onion Omega2+](https://onion.io/omega2/) attached to a
 [Roboteq MDC2460](https://www.roboteq.com/index.php/component/virtuemart/313/mdc2460-274-detail?Itemid=970)
